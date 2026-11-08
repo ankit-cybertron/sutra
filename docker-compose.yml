@@ -1,0 +1,32 @@
+# Local dev topology. Supabase (Postgres + Auth) runs via `supabase start`, not here.
+# Dockerfiles are created in Phase 0 following the docker-patterns skill:
+# multi-stage, pinned base images, non-root user, healthcheck, .dockerignore.
+
+services:
+  api:
+    build:
+      context: ./apps/api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
