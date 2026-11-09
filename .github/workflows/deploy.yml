@@ -16,6 +16,8 @@ concurrency:
 
 env:
   AWS_REGION: ap-south-1
+  EB_APPLICATION_NAME: sutra
+  EB_ENVIRONMENT_NAME: sutra-pod
 
 jobs:
   test:
@@ -77,17 +79,17 @@ jobs:
         uses: aws-actions/aws-elasticbeanstalk-deploy@v1
         with:
           aws-region: ${{ env.AWS_REGION }}
-          application-name: ${{ vars.EB_APPLICATION_NAME }}
-          environment-name: ${{ vars.EB_ENVIRONMENT_NAME }}
+          application-name: ${{ env.EB_APPLICATION_NAME }}
+          environment-name: ${{ env.EB_ENVIRONMENT_NAME }}
           version-label: sutra-${{ github.sha }}-${{ github.run_number }}
           deployment-package-path: deploy.zip
           use-existing-application-version-if-available: true
 
       - name: Verify Elastic Beanstalk Environment Health
         run: |
-          echo "Verifying deployment for ${{ vars.EB_ENVIRONMENT_NAME }}..."
+          echo "Verifying deployment for ${{ env.EB_ENVIRONMENT_NAME }}..."
           aws elasticbeanstalk describe-environments \
-            --application-name "${{ vars.EB_APPLICATION_NAME }}" \
-            --environment-names "${{ vars.EB_ENVIRONMENT_NAME }}" \
+            --application-name "${{ env.EB_APPLICATION_NAME }}" \
+            --environment-names "${{ env.EB_ENVIRONMENT_NAME }}" \
             --query "Environments[0].{Status:Status,Health:Health,HealthStatus:HealthStatus,CNAME:CNAME}" \
             --output table
