@@ -1,0 +1,10 @@
+{
+  "name": "@voxspec/spec-schema",
+  "version": "1.0.0",
+  "description": "Generated JSON Schema and TypeScript definitions for VoxSpec Spec contracts",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "echo 'Generated from Pydantic models'"
+  }
+}

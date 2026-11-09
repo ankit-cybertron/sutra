@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface-2: #F0EDE5;
+  --ink: #16181D;
+  --ink-muted: #5B6070;
+  --line: #E4E0D6;
+  --accent: #B45309;
+  --accent-ink: #FFFFFF;
+  --ok: #1F7A52;
+  --warn: #9A6700;
+  --danger: #B3261E;
+  --focus: #1D4ED8;
+}
+
+[data-theme="dark"],
+.dark {
+  --bg: #0E1117;
+  --surface: #151A23;
+  --surface-2: #1B2230;
+  --ink: #E8EAF0;
+  --ink-muted: #9AA3B5;
+  --line: #263042;
+  --accent: #F5A524;
+  --accent-ink: #1A1204;
+  --ok: #3DD68C;
+  --warn: #E3B341;
+  --danger: #FF7B72;
+  --focus: #7AA2FF;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
