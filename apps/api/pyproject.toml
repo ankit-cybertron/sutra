@@ -1,0 +1,27 @@
+[project]
+name = "sutra-api"
+version = "0.1.0"
+description = "Sutra - Voice-first idea-to-plan backend API (Gnani AI + Groq)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.8.0",
+    "httpx>=0.27.0",
+    "websockets>=13.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
