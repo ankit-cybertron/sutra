@@ -1,0 +1,562 @@
+{
+  "$defs": {
+    "AcceptanceCriterion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "given": {
+          "minLength": 1,
+          "title": "Given",
+          "type": "string"
+        },
+        "when": {
+          "minLength": 1,
+          "title": "When",
+          "type": "string"
+        },
+        "then": {
+          "minLength": 1,
+          "title": "Then",
+          "type": "string"
+        },
+        "story": {
+          "minLength": 1,
+          "title": "Story",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "given",
+        "when",
+        "then",
+        "story"
+      ],
+      "title": "AcceptanceCriterion",
+      "type": "object"
+    },
+    "Assumption": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "risk": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Risk",
+          "type": "string"
+        },
+        "status": {
+          "default": "open",
+          "enum": [
+            "open",
+            "confirmed",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "statement",
+        "risk"
+      ],
+      "title": "Assumption",
+      "type": "object"
+    },
+    "CoreLoopStep": {
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "actor": {
+          "minLength": 1,
+          "title": "Actor",
+          "type": "string"
+        },
+        "action": {
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "outcome": {
+          "minLength": 1,
+          "title": "Outcome",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step",
+        "actor",
+        "action",
+        "outcome"
+      ],
+      "title": "CoreLoopStep",
+      "type": "object"
+    },
+    "DataModel": {
+      "additionalProperties": false,
+      "properties": {
+        "entities": {
+          "items": {
+            "$ref": "#/$defs/Entity"
+          },
+          "minItems": 1,
+          "title": "Entities",
+          "type": "array"
+        }
+      },
+      "required": [
+        "entities"
+      ],
+      "title": "DataModel",
+      "type": "object"
+    },
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "topic": {
+          "minLength": 1,
+          "title": "Topic",
+          "type": "string"
+        },
+        "final": {
+          "minLength": 1,
+          "title": "Final",
+          "type": "string"
+        },
+        "superseded": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Superseded",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Span"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "topic",
+        "final"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "EdgeCase": {
+      "additionalProperties": false,
+      "properties": {
+        "case": {
+          "minLength": 1,
+          "title": "Case",
+          "type": "string"
+        },
+        "handling": {
+          "minLength": 1,
+          "title": "Handling",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case",
+        "handling"
+      ],
+      "title": "EdgeCase",
+      "type": "object"
+    },
+    "Entity": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/FieldDef"
+          },
+          "minItems": 1,
+          "title": "Fields",
+          "type": "array"
+        },
+        "relations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Relations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "fields"
+      ],
+      "title": "Entity",
+      "type": "object"
+    },
+    "FieldDef": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "minLength": 1,
+          "title": "Type",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "FieldDef",
+      "type": "object"
+    },
+    "Problem": {
+      "additionalProperties": false,
+      "properties": {
+        "statement": {
+          "minLength": 10,
+          "title": "Statement",
+          "type": "string"
+        },
+        "narrow_user": {
+          "minLength": 3,
+          "title": "Narrow User",
+          "type": "string"
+        },
+        "why_now": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Why Now"
+        }
+      },
+      "required": [
+        "statement",
+        "narrow_user"
+      ],
+      "title": "Problem",
+      "type": "object"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "must": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Must",
+          "type": "array"
+        },
+        "should": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Should",
+          "type": "array"
+        },
+        "wont_now": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Wont Now",
+          "type": "array"
+        },
+        "cut_line": {
+          "minLength": 10,
+          "title": "Cut Line",
+          "type": "string"
+        }
+      },
+      "required": [
+        "must",
+        "wont_now",
+        "cut_line"
+      ],
+      "title": "Scope",
+      "type": "object"
+    },
+    "Screen": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "purpose": {
+          "minLength": 1,
+          "title": "Purpose",
+          "type": "string"
+        },
+        "states": {
+          "$ref": "#/$defs/ScreenStates"
+        }
+      },
+      "required": [
+        "name",
+        "purpose",
+        "states"
+      ],
+      "title": "Screen",
+      "type": "object"
+    },
+    "ScreenStates": {
+      "additionalProperties": false,
+      "properties": {
+        "empty": {
+          "minLength": 1,
+          "title": "Empty",
+          "type": "string"
+        },
+        "loading": {
+          "minLength": 1,
+          "title": "Loading",
+          "type": "string"
+        },
+        "error": {
+          "minLength": 1,
+          "title": "Error",
+          "type": "string"
+        },
+        "success": {
+          "minLength": 1,
+          "title": "Success",
+          "type": "string"
+        }
+      },
+      "required": [
+        "empty",
+        "loading",
+        "error",
+        "success"
+      ],
+      "title": "ScreenStates",
+      "type": "object"
+    },
+    "Span": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Span",
+      "type": "object"
+    },
+    "UserStory": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "as_a": {
+          "minLength": 1,
+          "title": "As A",
+          "type": "string"
+        },
+        "i_want": {
+          "minLength": 1,
+          "title": "I Want",
+          "type": "string"
+        },
+        "so_that": {
+          "minLength": 1,
+          "title": "So That",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "must",
+            "should"
+          ],
+          "title": "Priority",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "as_a",
+        "i_want",
+        "so_that",
+        "priority"
+      ],
+      "title": "UserStory",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "tagline": {
+      "maxLength": 240,
+      "minLength": 1,
+      "title": "Tagline",
+      "type": "string"
+    },
+    "problem": {
+      "$ref": "#/$defs/Problem"
+    },
+    "core_loop": {
+      "items": {
+        "$ref": "#/$defs/CoreLoopStep"
+      },
+      "maxItems": 7,
+      "minItems": 3,
+      "title": "Core Loop",
+      "type": "array"
+    },
+    "scope": {
+      "$ref": "#/$defs/Scope"
+    },
+    "user_stories": {
+      "items": {
+        "$ref": "#/$defs/UserStory"
+      },
+      "minItems": 1,
+      "title": "User Stories",
+      "type": "array"
+    },
+    "data_model": {
+      "$ref": "#/$defs/DataModel"
+    },
+    "screens": {
+      "items": {
+        "$ref": "#/$defs/Screen"
+      },
+      "minItems": 1,
+      "title": "Screens",
+      "type": "array"
+    },
+    "edge_cases": {
+      "items": {
+        "$ref": "#/$defs/EdgeCase"
+      },
+      "minItems": 1,
+      "title": "Edge Cases",
+      "type": "array"
+    },
+    "acceptance_criteria": {
+      "items": {
+        "$ref": "#/$defs/AcceptanceCriterion"
+      },
+      "minItems": 1,
+      "title": "Acceptance Criteria",
+      "type": "array"
+    },
+    "first_prompt": {
+      "maxLength": 2500,
+      "minLength": 20,
+      "title": "First Prompt",
+      "type": "string"
+    },
+    "decisions": {
+      "items": {
+        "$ref": "#/$defs/Decision"
+      },
+      "minItems": 1,
+      "title": "Decisions",
+      "type": "array"
+    },
+    "assumptions": {
+      "items": {
+        "$ref": "#/$defs/Assumption"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "open_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Open Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title",
+    "tagline",
+    "problem",
+    "core_loop",
+    "scope",
+    "user_stories",
+    "data_model",
+    "screens",
+    "edge_cases",
+    "acceptance_criteria",
+    "first_prompt",
+    "decisions"
+  ],
+  "title": "VoxSpec Spec",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
