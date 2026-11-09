@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -38,7 +39,7 @@ async def close_db_pool() -> None:
 
 @asynccontextmanager
 async def user_transaction(
-    user: AuthenticatedUser,
+    user: AuthenticatedUser | str | uuid.UUID,
     settings: Settings | None = None,
 ) -> AsyncGenerator[asyncpg.Connection, None]:
     """
@@ -48,9 +49,16 @@ async def user_transaction(
     """
     pool = await get_db_pool(settings)
     async with pool.acquire() as conn, conn.transaction():
-        # Set request.jwt.claim.sub and request.jwt.claims locally for this transaction
-        user_id_str = str(user.user_id)
-        claims_json = json.dumps(user.claims)
+        # Extract user context
+        if isinstance(user, AuthenticatedUser):
+            user_id_str = str(user.user_id)
+            role = user.role
+            claims_json = json.dumps(user.claims)
+        else:
+            user_id_str = str(user)
+            role = "authenticated"
+            claims_json = json.dumps({"sub": user_id_str, "role": role})
+
         await conn.execute(
             """
                 SELECT set_config('request.jwt.claim.sub', $1, true),
@@ -58,7 +66,7 @@ async def user_transaction(
                        set_config('request.jwt.claims', $3, true);
                 """,
             user_id_str,
-            user.role,
+            role,
             claims_json,
         )
         # Switch to authenticated role for RLS policy evaluation

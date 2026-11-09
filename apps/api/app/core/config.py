@@ -29,15 +29,19 @@ class Settings(BaseSettings):
     MAX_TRANSCRIPT_CHARS: int = 12000
 
     # LLM
-    LLM_PROVIDER: str = "fake"
-    LLM_MODEL: str = "fake-default"
+    LLM_PROVIDER: str = "fake"  # fake | groq | anthropic | openai | gemini
+    LLM_MODEL: str = "llama-3.3-70b-versatile"
     LLM_TIMEOUT_S: float = 30.0
+    GROQ_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
     # STT
-    STT_PROVIDER: str = "none"
+    STT_PROVIDER: str = "fake"  # fake | gnani | none
+    GNANI_API_KEY: str = ""
+    GNANI_API_URL: str = "https://api.vachana.ai/stt/v3"
+    GNANI_LANGUAGE_CODE: str = "mixed"  # en-IN | hi-IN | mixed
     STT_API_KEY: str = ""
 
     @property
