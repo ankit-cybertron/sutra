@@ -46,18 +46,37 @@ GNANI_API_KEY=your_gnani_api_key_here
 GNANI_BASE_URL=https://api.vachana.ai
 ```
 
-### 3. Run Backend API Server
+### 3. Run Backend API Server Locally
 ```bash
 # Activate virtual environment
 source apps/api/.venv/bin/activate
 
-# Run FastAPI server
-uvicorn apps.api.app.main:app --host 0.0.0.0 --port 8000 --reload
+# Development mode (Uvicorn)
+uvicorn application:app --host 0.0.0.0 --port 5000 --reload
+
+# Production mode (Gunicorn with Uvicorn workers)
+gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 application:app
 ```
 
 Interactive API documentation will be available at:
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
+- **Swagger UI:** `http://localhost:5000/docs`
+- **ReDoc:** `http://localhost:5000/redoc`
+- **Health Check:** `http://localhost:5000/api/health`
+
+---
+
+## Production Deployment (AWS Elastic Beanstalk · Python 3.11)
+
+Sutra deploys directly to **AWS Elastic Beanstalk (Python 3.11)** without containers or Docker overhead:
+
+- **Runtime:** Native Python 3.11 on Amazon Linux 2023.
+- **Process Manager:** `Procfile` launching Gunicorn with asynchronous `uvicorn.workers.UvicornWorker` on port 5000.
+- **CI/CD:** GitHub Actions via OpenID Connect (OIDC) directly to Elastic Beanstalk in `ap-south-1`.
+- **Reverse Proxy:** Elastic Beanstalk Nginx proxies traffic from port 80/443 to `127.0.0.1:5000`.
+- **Proxy Headers:** `ProxyHeadersMiddleware` enabled to properly handle `X-Forwarded-Proto` and `X-Forwarded-For` from AWS ALB.
+
+### Data Persistence Note
+Elastic Beanstalk EC2 instances have ephemeral storage. When an EC2 instance is terminated or replaced during a deployment or auto-scaling event, local files in `./data` are recreated fresh. For long-term multi-instance production environments, mount **Amazon EFS** (Elastic File System) at `/var/app/current/data` or configure an S3/DynamoDB document adapter.
 - **Health Check:** `http://localhost:8000/api/health`
 
 ### 4. Run Test Suite

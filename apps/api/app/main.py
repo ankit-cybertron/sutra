@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from apps.api.app.config import settings
 from apps.api.app.errors import (
@@ -56,6 +57,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         extra={"validation_errors": errors},
     )
 
+
+# Support X-Forwarded-Proto, X-Forwarded-For behind AWS ALB and Nginx
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # CORS configuration
 app.add_middleware(
