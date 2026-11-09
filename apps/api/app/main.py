@@ -34,6 +34,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
 
+    if settings is not None:
+        app.dependency_overrides[get_settings] = lambda: settings
+
     # Request ID and structured logging middleware
     @app.middleware("http")
     async def request_id_middleware(
