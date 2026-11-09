@@ -1,4 +1,5 @@
 """Sessions, Transcripts, Analysis, and Spec Compilation endpoints."""
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -44,6 +45,7 @@ CurrentLLM = Annotated[LLMProvider, Depends(get_llm)]
 
 # ── Create Session ───────────────────────────────────────────────────────────
 
+
 @router.post(
     "/projects/{project_id}/sessions",
     response_model=SessionResponse,
@@ -59,6 +61,7 @@ async def create_new_session(
 
 
 # ── Upsert Transcript ────────────────────────────────────────────────────────
+
 
 @router.post(
     "/sessions/{session_id}/transcripts",
@@ -86,6 +89,7 @@ async def save_transcript(
 
 
 # ── Analyze Session (SSE Streaming) ──────────────────────────────────────────
+
 
 @router.post("/sessions/{session_id}/analyze")
 async def analyze_session(
@@ -135,6 +139,7 @@ async def analyze_session(
 
 # ── Save Answers ─────────────────────────────────────────────────────────────
 
+
 @router.post("/sessions/{session_id}/answers", status_code=status.HTTP_200_OK)
 async def submit_answers(
     session_id: str,
@@ -155,6 +160,7 @@ async def submit_answers(
 
 
 # ── Compile Spec (SSE Streaming) ─────────────────────────────────────────────
+
 
 @router.post("/sessions/{session_id}/compile")
 async def compile_session(
@@ -196,6 +202,7 @@ async def compile_session(
 
 # ── Get Latest Spec ──────────────────────────────────────────────────────────
 
+
 @router.get("/sessions/{session_id}/spec", response_model=SpecVersionResponse)
 async def get_latest_spec(
     session_id: str,
@@ -212,6 +219,7 @@ async def get_latest_spec(
 
 
 # ── Export Spec Version ───────────────────────────────────────────────────────
+
 
 @router.get("/spec-versions/{version_id}/export")
 async def export_spec(

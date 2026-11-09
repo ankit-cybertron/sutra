@@ -26,10 +26,14 @@ def score(spec: Spec, unanswered_questions_count: int = 0) -> ReadinessScore:
 
     # 2. Core loop (15 points)
     loop_len = len(spec.core_loop)
-    valid_steps = all(s.actor.strip() and s.action.strip() and s.outcome.strip() for s in spec.core_loop)
+    valid_steps = all(
+        s.actor.strip() and s.action.strip() and s.outcome.strip() for s in spec.core_loop
+    )
     if 3 <= loop_len <= 7 and valid_steps:
         earned_cl = 15
-        reason_cl = f"Core loop contains {loop_len} structured steps with actor, action, and outcome."
+        reason_cl = (
+            f"Core loop contains {loop_len} structured steps with actor, action, and outcome."
+        )
     elif loop_len < 3:
         earned_cl = max(0, loop_len * 4)
         reason_cl = f"Core loop has only {loop_len} steps (minimum is 3)."
@@ -59,7 +63,9 @@ def score(spec: Spec, unanswered_questions_count: int = 0) -> ReadinessScore:
             missing.append("wont_now scope")
         reason_sc = f"Missing scope boundaries: {', '.join(missing)}."
     breakdown.append(
-        ScoreBreakdownItem(component="Scope and cut line", earned=earned_sc, max=15, reason=reason_sc)
+        ScoreBreakdownItem(
+            component="Scope and cut line", earned=earned_sc, max=15, reason=reason_sc
+        )
     )
     total_score += earned_sc
 
@@ -81,7 +87,9 @@ def score(spec: Spec, unanswered_questions_count: int = 0) -> ReadinessScore:
         reason_dm = f"{len(entities)} entities with typed fields and valid relations."
     elif len(entities) >= 1 and has_min_fields:
         earned_dm = 7
-        reason_dm = f"{len(entities)} entities defined, but some relation references are unresolved."
+        reason_dm = (
+            f"{len(entities)} entities defined, but some relation references are unresolved."
+        )
     else:
         earned_dm = 4
         reason_dm = "Data model lacks sufficient entity field detail."
@@ -115,25 +123,35 @@ def score(spec: Spec, unanswered_questions_count: int = 0) -> ReadinessScore:
         earned_ac = 15
         reason_ac = "All user stories have matching acceptance criteria."
     breakdown.append(
-        ScoreBreakdownItem(component="Acceptance criteria", earned=earned_ac, max=15, reason=reason_ac)
+        ScoreBreakdownItem(
+            component="Acceptance criteria", earned=earned_ac, max=15, reason=reason_ac
+        )
     )
     total_score += earned_ac
 
     # 7. Screens and states (10 points)
     screen_count = len(spec.screens)
     all_states_defined = all(
-        s.states.empty.strip() and s.states.loading.strip() and
-        s.states.error.strip() and s.states.success.strip()
+        s.states.empty.strip()
+        and s.states.loading.strip()
+        and s.states.error.strip()
+        and s.states.success.strip()
         for s in spec.screens
     )
     if screen_count >= 1 and all_states_defined:
         earned_ss = 10
-        reason_ss = f"All {screen_count} screen(s) define empty, loading, error, and success states."
+        reason_ss = (
+            f"All {screen_count} screen(s) define empty, loading, error, and success states."
+        )
     else:
         earned_ss = 5
-        reason_ss = "Some screens are missing complete state descriptions (empty/loading/error/success)."
+        reason_ss = (
+            "Some screens are missing complete state descriptions (empty/loading/error/success)."
+        )
     breakdown.append(
-        ScoreBreakdownItem(component="Screens and states", earned=earned_ss, max=10, reason=reason_ss)
+        ScoreBreakdownItem(
+            component="Screens and states", earned=earned_ss, max=10, reason=reason_ss
+        )
     )
     total_score += earned_ss
 
@@ -142,7 +160,9 @@ def score(spec: Spec, unanswered_questions_count: int = 0) -> ReadinessScore:
     has_dnb = "do not build" in spec.first_prompt.lower()
     if 20 <= prompt_len <= 2500 and has_dnb:
         earned_fp = 10
-        reason_fp = f"Self-contained prompt ({prompt_len} chars) with explicit 'Do not build' section."
+        reason_fp = (
+            f"Self-contained prompt ({prompt_len} chars) with explicit 'Do not build' section."
+        )
     elif not has_dnb:
         earned_fp = 3
         reason_fp = "First prompt missing required 'Do not build' section."

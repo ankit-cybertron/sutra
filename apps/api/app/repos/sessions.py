@@ -2,6 +2,7 @@
 Sessions, Transcripts, Extractions, Questions, Answers, Assumptions, and SpecVersions repos.
 Strictly matches 0001_init.sql schema and RLS requirements.
 """
+
 from __future__ import annotations
 
 import json
@@ -16,6 +17,7 @@ logger = get_logger("voxspec.repos.sessions")
 
 
 # ── Sessions ─────────────────────────────────────────────────────────────────
+
 
 async def create_session(
     conn: asyncpg.Connection,
@@ -73,6 +75,7 @@ async def update_session_status(
 
 # ── Transcripts ───────────────────────────────────────────────────────────────
 
+
 async def insert_transcript(
     conn: asyncpg.Connection,
     *,
@@ -120,6 +123,7 @@ async def get_latest_transcript(
 
 
 # ── Extractions, Questions, Assumptions ──────────────────────────────────────
+
 
 async def save_pipeline_extraction(
     conn: asyncpg.Connection,
@@ -252,6 +256,7 @@ async def get_latest_extraction(
 
 # ── Answers ───────────────────────────────────────────────────────────────────
 
+
 async def save_answers(
     conn: asyncpg.Connection,
     *,
@@ -309,6 +314,7 @@ async def get_answers(
 
 
 # ── Spec versions ─────────────────────────────────────────────────────────────
+
 
 async def create_spec_version(
     conn: asyncpg.Connection,

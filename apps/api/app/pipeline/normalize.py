@@ -10,10 +10,36 @@ LanguageTag = Literal["en", "hi", "hi-Latn", "mixed"]
 
 DEVANAGARI_REGEX = re.compile(r"[\u0900-\u097F]")
 HINGLISH_WORDS = {
-    "nahi", "nahin", "ruko", "matlab", "mera", "chhodo", "chodo", "balki",
-    "pehle", "jaisa", "karna", "hoga", "karo", "aur", "lekin", "bhi",
-    "thik", "theek", "kaise", "karega", "wala", "wali", "wale", "kuch",
-    "sab", "haan", "acha", "accha", "samjha", "bhai"
+    "nahi",
+    "nahin",
+    "ruko",
+    "matlab",
+    "mera",
+    "chhodo",
+    "chodo",
+    "balki",
+    "pehle",
+    "jaisa",
+    "karna",
+    "hoga",
+    "karo",
+    "aur",
+    "lekin",
+    "bhi",
+    "thik",
+    "theek",
+    "kaise",
+    "karega",
+    "wala",
+    "wali",
+    "wale",
+    "kuch",
+    "sab",
+    "haan",
+    "acha",
+    "accha",
+    "samjha",
+    "bhai",
 }
 
 

@@ -1,4 +1,5 @@
 """In-memory sliding window rate limiter for per-user request limits."""
+
 from __future__ import annotations
 
 import time

@@ -127,7 +127,9 @@ def render(spec: Spec) -> str:
     lines.append("")
     if spec.assumptions:
         for asm in spec.assumptions:
-            lines.append(f"- **[{asm.id}]** ({asm.risk.upper()} / {asm.status.upper()}): {asm.statement}")
+            lines.append(
+                f"- **[{asm.id}]** ({asm.risk.upper()} / {asm.status.upper()}): {asm.statement}"
+            )
     else:
         lines.append("No active assumptions recorded.")
     lines.append("")

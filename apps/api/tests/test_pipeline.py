@@ -2,6 +2,7 @@
 Unit tests for pipeline/ and schemas.
 Covers: normalize, detect_language, resolve, score, render, Spec validators, Claim/Decision models.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,6 +33,7 @@ from app.schemas.spec import (
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 def make_claim(
     id: str,
@@ -66,7 +68,9 @@ def make_minimal_spec(**overrides: object) -> Spec:
         ),
         "core_loop": [
             CoreLoopStep(step=1, actor="User", action="clicks button", outcome="Action triggered"),
-            CoreLoopStep(step=2, actor="System", action="processes request", outcome="Result shown"),
+            CoreLoopStep(
+                step=2, actor="System", action="processes request", outcome="Result shown"
+            ),
             CoreLoopStep(step=3, actor="User", action="views result", outcome="Task complete"),
         ],
         "scope": Scope(
@@ -75,17 +79,25 @@ def make_minimal_spec(**overrides: object) -> Spec:
             cut_line="V1 ships core feature only.",
         ),
         "user_stories": [
-            UserStory(id="US1", as_a="user", i_want="to use the app", so_that="I can get things done", priority="must"),
+            UserStory(
+                id="US1",
+                as_a="user",
+                i_want="to use the app",
+                so_that="I can get things done",
+                priority="must",
+            ),
         ],
-        "data_model": DataModel(entities=[
-            Entity(
-                name="Item",
-                fields=[
-                    FieldDef(name="id", type="uuid", required=True),
-                    FieldDef(name="name", type="text", required=True),
-                ],
-            )
-        ]),
+        "data_model": DataModel(
+            entities=[
+                Entity(
+                    name="Item",
+                    fields=[
+                        FieldDef(name="id", type="uuid", required=True),
+                        FieldDef(name="name", type="text", required=True),
+                    ],
+                )
+            ]
+        ),
         "screens": [
             Screen(
                 name="Main",
@@ -126,6 +138,7 @@ def make_minimal_spec(**overrides: object) -> Spec:
 # ===========================================================================
 # normalize()
 # ===========================================================================
+
 
 class TestNormalize:
     def test_empty_string_returns_empty_list(self) -> None:
@@ -185,6 +198,7 @@ class TestNormalize:
 # detect_language()
 # ===========================================================================
 
+
 class TestDetectLanguage:
     def test_english_only(self) -> None:
         assert detect_language("The user wants to sign in to the application.") == "en"
@@ -215,6 +229,7 @@ class TestDetectLanguage:
 # ===========================================================================
 # resolve()
 # ===========================================================================
+
 
 class TestResolve:
     def test_empty_claims_returns_empty(self) -> None:
@@ -307,10 +322,7 @@ class TestResolve:
         ]
         decisions1, _ = resolve(claims)
         # Build new claims from decisions (simulate re-resolve)
-        rederived = [
-            make_claim(f"r{i}", d.topic, d.final, 0, 10)
-            for i, d in enumerate(decisions1)
-        ]
+        rederived = [make_claim(f"r{i}", d.topic, d.final, 0, 10) for i, d in enumerate(decisions1)]
         decisions2, _ = resolve(rederived)
         assert [d.final for d in decisions1] == [d.final for d in decisions2]
 
@@ -318,6 +330,7 @@ class TestResolve:
 # ===========================================================================
 # score()
 # ===========================================================================
+
 
 class TestScore:
     def test_perfect_spec_scores_high(self) -> None:
@@ -329,7 +342,9 @@ class TestScore:
         # Maximal penalties: 4 high-risk open assumptions + 3 unanswered questions
         spec = make_minimal_spec(
             assumptions=[
-                Assumption(id=f"A{i}", statement=f"Risky assumption {i}", risk="high", status="open")
+                Assumption(
+                    id=f"A{i}", statement=f"Risky assumption {i}", risk="high", status="open"
+                )
                 for i in range(5)
             ]
         )
@@ -406,7 +421,9 @@ class TestScore:
         base_spec = make_minimal_spec()
         # model_copy skips the model_validator so we can inject a prompt without DNB
         patched = base_spec.model_copy(
-            update={"first_prompt": "Build the entire system with no restrictions whatsoever please do everything."}
+            update={
+                "first_prompt": "Build the entire system with no restrictions whatsoever please do everything."
+            }
         )
         result = score(patched)
         fp_item = next(b for b in result.breakdown if b.component == "First prompt")
@@ -471,12 +488,14 @@ class TestScore:
     def test_data_model_one_field_entity_earns_partial(self) -> None:
         """Entity with 1 field (< 2) earns 4 (minimum)."""
         base = make_minimal_spec()
-        single_field_dm = DataModel(entities=[
-            Entity(
-                name="Simple",
-                fields=[FieldDef(name="id", type="uuid", required=True)],
-            )
-        ])
+        single_field_dm = DataModel(
+            entities=[
+                Entity(
+                    name="Simple",
+                    fields=[FieldDef(name="id", type="uuid", required=True)],
+                )
+            ]
+        )
         patched = base.model_copy(update={"data_model": single_field_dm})
         result = score(patched)
         dm_item = next(b for b in result.breakdown if b.component == "Data model")
@@ -485,16 +504,18 @@ class TestScore:
     def test_data_model_unresolved_relations_earns_7(self) -> None:
         """Entity with 2+ fields but bad relation → earns 7."""
         base = make_minimal_spec()
-        bad_dm = DataModel(entities=[
-            Entity(
-                name="Order",
-                fields=[
-                    FieldDef(name="id", type="uuid", required=True),
-                    FieldDef(name="user_id", type="uuid", required=True),
-                ],
-                relations=["User 1:N NonExistentEntity"],
-            )
-        ])
+        bad_dm = DataModel(
+            entities=[
+                Entity(
+                    name="Order",
+                    fields=[
+                        FieldDef(name="id", type="uuid", required=True),
+                        FieldDef(name="user_id", type="uuid", required=True),
+                    ],
+                    relations=["User 1:N NonExistentEntity"],
+                )
+            ]
+        )
         patched = base.model_copy(update={"data_model": bad_dm})
         result = score(patched)
         dm_item = next(b for b in result.breakdown if b.component == "Data model")
@@ -503,9 +524,9 @@ class TestScore:
     def test_edge_cases_fewer_than_3_earns_partial(self) -> None:
         """1 edge case earns int(1/3*10) = 3."""
         base = make_minimal_spec()
-        patched = base.model_copy(update={"edge_cases": [
-            EdgeCase(case="Single case", handling="Handle it.")
-        ]})
+        patched = base.model_copy(
+            update={"edge_cases": [EdgeCase(case="Single case", handling="Handle it.")]}
+        )
         result = score(patched)
         ec_item = next(b for b in result.breakdown if b.component == "Edge cases")
         assert ec_item.earned == 3
@@ -530,7 +551,7 @@ class TestScore:
     def test_first_prompt_too_long_earns_5(self) -> None:
         """first_prompt > 2500 chars with DNB → earns 5."""
         base = make_minimal_spec()
-        long_prompt = ("Do not build anything extra. " + "x " * 1300)  # well over 2500 chars with dnb
+        long_prompt = "Do not build anything extra. " + "x " * 1300  # well over 2500 chars with dnb
         patched = base.model_copy(update={"first_prompt": long_prompt})
         result = score(patched)
         fp_item = next(b for b in result.breakdown if b.component == "First prompt")
@@ -556,9 +577,13 @@ class TestScore:
             ],
         )
         # Patch to only cover US1
-        patched = base.model_copy(update={"acceptance_criteria": [
-            AcceptanceCriterion(id="AC1", given="g", when="w", then="t", story="US1"),
-        ]})
+        patched = base.model_copy(
+            update={
+                "acceptance_criteria": [
+                    AcceptanceCriterion(id="AC1", given="g", when="w", then="t", story="US1"),
+                ]
+            }
+        )
         result = score(patched)
         ac_item = next(b for b in result.breakdown if b.component == "Acceptance criteria")
         assert ac_item.earned == 7  # int(0.5 * 15)
@@ -626,9 +651,7 @@ class TestRender:
 
     def test_decisions_section_rendered(self) -> None:
         spec = make_minimal_spec(
-            decisions=[
-                Decision(topic="auth.method", final="magic link", superseded=["password"])
-            ]
+            decisions=[Decision(topic="auth.method", final="magic link", superseded=["password"])]
         )
         md = render(spec)
         assert "auth.method" in md
@@ -673,6 +696,7 @@ class TestRender:
 # ===========================================================================
 # Spec schema validators
 # ===========================================================================
+
 
 class TestSpecValidators:
     def test_duplicate_story_ids_raise(self) -> None:
@@ -731,6 +755,7 @@ class TestSpecValidators:
 # Claim / Decision model validation
 # ===========================================================================
 
+
 class TestClaimModel:
     def test_valid_claim(self) -> None:
         c = make_claim("c1", "auth.method", "magic link", 0, 20)
@@ -739,29 +764,45 @@ class TestClaimModel:
     def test_span_start_must_be_nonneg(self) -> None:
         with pytest.raises(ValueError):
             Claim(
-                id="c1", topic="t", value="v", stance="assert",
-                span=Span(start=-1, end=10), lang="en"
+                id="c1",
+                topic="t",
+                value="v",
+                stance="assert",
+                span=Span(start=-1, end=10),
+                lang="en",
             )
 
     def test_span_end_must_be_nonneg(self) -> None:
         with pytest.raises(ValueError):
             Claim(
-                id="c1", topic="t", value="v", stance="assert",
-                span=Span(start=0, end=-5), lang="en"
+                id="c1",
+                topic="t",
+                value="v",
+                stance="assert",
+                span=Span(start=0, end=-5),
+                lang="en",
             )
 
     def test_invalid_stance_raises(self) -> None:
         with pytest.raises(ValueError):
             Claim(
-                id="c1", topic="t", value="v", stance="unknown",  # type: ignore[arg-type]
-                span=Span(start=0, end=10), lang="en"
+                id="c1",
+                topic="t",
+                value="v",
+                stance="unknown",  # type: ignore[arg-type]
+                span=Span(start=0, end=10),
+                lang="en",
             )
 
     def test_extra_fields_forbidden(self) -> None:
         with pytest.raises(ValueError):
             Claim(
-                id="c1", topic="t", value="v", stance="assert",
-                span=Span(start=0, end=10), lang="en",
+                id="c1",
+                topic="t",
+                value="v",
+                stance="assert",
+                span=Span(start=0, end=10),
+                lang="en",
                 extra_field="not allowed",  # type: ignore[call-arg]
             )
 
@@ -784,6 +825,7 @@ class TestDecisionModel:
 # ===========================================================================
 # FakeLLMProvider
 # ===========================================================================
+
 
 class TestFakeLLMProvider:
     @pytest.mark.asyncio
@@ -830,9 +872,9 @@ class TestFakeLLMProvider:
 
         llm = FakeLLMProvider()
         # Register a custom fixture
-        custom = ClaimExtractionResult(claims=[
-            make_claim("custom1", "custom.topic", "custom value", 0, 20)
-        ])
+        custom = ClaimExtractionResult(
+            claims=[make_claim("custom1", "custom.topic", "custom value", 0, 20)]
+        )
         user_text = "my specific prompt"
         h = llm.compute_hash(user_text)
         llm.register_fixture(h, custom)

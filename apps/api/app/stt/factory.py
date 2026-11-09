@@ -1,4 +1,5 @@
 """STT provider factory."""
+
 from __future__ import annotations
 
 from app.core.config import Settings
@@ -21,4 +22,6 @@ def build_stt_provider(settings: Settings) -> STTProvider:
             default_language_code=settings.GNANI_LANGUAGE_CODE,
         )
 
-    raise ValueError(f"Unknown STT_PROVIDER: {settings.STT_PROVIDER!r}. Expected: fake, gnani, none")
+    raise ValueError(
+        f"Unknown STT_PROVIDER: {settings.STT_PROVIDER!r}. Expected: fake, gnani, none"
+    )

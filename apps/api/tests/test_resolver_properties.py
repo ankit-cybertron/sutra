@@ -2,6 +2,7 @@
 Hypothesis property-based tests for the resolver invariants.
 Covers all 6 invariants from docs/TESTING.md section 2.
 """
+
 from __future__ import annotations
 
 import string
@@ -19,16 +20,17 @@ from app.schemas.spec import Claim, Span
 
 TOPIC_ALPHABET = string.ascii_lowercase + "._"
 STANCES: list[Literal["assert", "revise", "retract", "tentative"]] = [
-    "assert", "revise", "retract", "tentative"
+    "assert",
+    "revise",
+    "retract",
+    "tentative",
 ]
 
-topic_st = st.text(
-    alphabet=TOPIC_ALPHABET, min_size=1, max_size=20
-).filter(lambda t: t.strip("._") != "")
-
-value_st = st.text(
-    alphabet=string.ascii_letters + string.digits + " ", min_size=1, max_size=40
+topic_st = st.text(alphabet=TOPIC_ALPHABET, min_size=1, max_size=20).filter(
+    lambda t: t.strip("._") != ""
 )
+
+value_st = st.text(alphabet=string.ascii_letters + string.digits + " ", min_size=1, max_size=40)
 
 stance_st = st.sampled_from(STANCES)
 
@@ -85,6 +87,7 @@ def claims_strategy(
 #   resolve(resolve(claims)[decisions]) == same final values
 # ---------------------------------------------------------------------------
 
+
 @given(claims_strategy())
 @settings(max_examples=100)
 def test_invariant_1_idempotent(claims: list[Claim]) -> None:
@@ -119,6 +122,7 @@ def test_invariant_1_idempotent(claims: list[Claim]) -> None:
 # ---------------------------------------------------------------------------
 # Invariant 2: Order-sensitive only by transcript position, not by claim ID
 # ---------------------------------------------------------------------------
+
 
 @given(claims_strategy())
 @settings(max_examples=100)
@@ -155,6 +159,7 @@ def test_invariant_2_position_ordering_not_id_ordering(claims: list[Claim]) -> N
 # Invariant 3: Tentative never replaces assert
 # ---------------------------------------------------------------------------
 
+
 @given(
     topic=topic_st,
     assert_value=value_st,
@@ -172,12 +177,20 @@ def test_invariant_3_tentative_never_replaces_assert(
     # assert at position 0, tentative at position 10 (later in transcript)
     claims = [
         Claim(
-            id="c1", topic=topic, value=assert_value, stance="assert",
-            span=Span(start=0, end=10), lang="en"
+            id="c1",
+            topic=topic,
+            value=assert_value,
+            stance="assert",
+            span=Span(start=0, end=10),
+            lang="en",
         ),
         Claim(
-            id="c2", topic=topic, value=tentative_value, stance="tentative",
-            span=Span(start=15, end=30), lang="en"
+            id="c2",
+            topic=topic,
+            value=tentative_value,
+            stance="tentative",
+            span=Span(start=15, end=30),
+            lang="en",
         ),
     ]
     decisions, _ = resolve(claims)
@@ -192,6 +205,7 @@ def test_invariant_3_tentative_never_replaces_assert(
 # Invariant 4: Retract drops topic from decisions
 # ---------------------------------------------------------------------------
 
+
 @given(
     topic=topic_st,
     value=value_st,
@@ -205,12 +219,21 @@ def test_invariant_4_retract_drops_topic(topic: str, value: str) -> None:
     assume(value.strip())
     claims = [
         Claim(
-            id="c1", topic=topic, value=value, stance="assert",
-            span=Span(start=0, end=10), lang="en"
+            id="c1",
+            topic=topic,
+            value=value,
+            stance="assert",
+            span=Span(start=0, end=10),
+            lang="en",
         ),
         Claim(
-            id="c2", topic=topic, value=value, stance="retract", revises="c1",
-            span=Span(start=15, end=30), lang="en"
+            id="c2",
+            topic=topic,
+            value=value,
+            stance="retract",
+            revises="c1",
+            span=Span(start=15, end=30),
+            lang="en",
         ),
     ]
     decisions, _ = resolve(claims)
@@ -221,6 +244,7 @@ def test_invariant_4_retract_drops_topic(topic: str, value: str) -> None:
 # ---------------------------------------------------------------------------
 # Invariant 5: Final value always equals the value of some claim in that topic
 # ---------------------------------------------------------------------------
+
 
 @given(claims_strategy(force_assert=True))
 @settings(max_examples=150)
@@ -233,6 +257,7 @@ def test_invariant_5_final_value_in_original_claims(claims: list[Claim]) -> None
 
     # Build a map of topic -> set of claim values
     from collections import defaultdict
+
     topic_values: dict[str, set[str]] = defaultdict(set)
     for c in claims:
         topic_values[c.topic.strip().lower()].add(c.value)
@@ -247,6 +272,7 @@ def test_invariant_5_final_value_in_original_claims(claims: list[Claim]) -> None
 # ---------------------------------------------------------------------------
 # Invariant 6: Every superseded value appears in trace or superseded list
 # ---------------------------------------------------------------------------
+
 
 @given(
     topic=topic_st,
@@ -263,12 +289,16 @@ def test_invariant_6_superseded_captured(topic: str, v1: str, v2: str) -> None:
 
     claims = [
         Claim(
-            id="c1", topic=topic, value=v1, stance="assert",
-            span=Span(start=0, end=10), lang="en"
+            id="c1", topic=topic, value=v1, stance="assert", span=Span(start=0, end=10), lang="en"
         ),
         Claim(
-            id="c2", topic=topic, value=v2, stance="revise", revises="c1",
-            span=Span(start=15, end=30), lang="en"
+            id="c2",
+            topic=topic,
+            value=v2,
+            stance="revise",
+            revises="c1",
+            span=Span(start=15, end=30),
+            lang="en",
         ),
     ]
     decisions, _traces = resolve(claims)
@@ -287,6 +317,7 @@ def test_invariant_6_superseded_captured(topic: str, v1: str, v2: str) -> None:
 # Additional property: resolve never raises on arbitrary valid input
 # ---------------------------------------------------------------------------
 
+
 @given(claims_strategy())
 @settings(max_examples=200)
 def test_resolve_never_crashes(claims: list[Claim]) -> None:
@@ -300,6 +331,7 @@ def test_resolve_never_crashes(claims: list[Claim]) -> None:
 # Additional property: evidence spans come from actual claim spans
 # ---------------------------------------------------------------------------
 
+
 @given(claims_strategy(force_assert=True))
 @settings(max_examples=100)
 def test_evidence_spans_from_claims(claims: list[Claim]) -> None:
@@ -307,6 +339,7 @@ def test_evidence_spans_from_claims(claims: list[Claim]) -> None:
     decisions, _ = resolve(claims)
 
     from collections import defaultdict
+
     topic_spans: dict[str, set[tuple[int, int]]] = defaultdict(set)
     for c in claims:
         if c.stance in ("assert", "revise", "retract"):

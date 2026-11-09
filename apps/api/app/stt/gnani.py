@@ -3,6 +3,7 @@ Gnani.ai Speech-to-Text adapter (Prisma STT).
 Endpoint: https://api.vachana.ai/stt/v3
 Specialized for Indic languages and Indian code-mixed Hinglish speech.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -57,7 +58,9 @@ class GnaniSTTProvider:
                     data=data,
                 )
             except httpx.TimeoutException as exc:
-                raise TimeoutError(f"Gnani.ai STT request timed out after {self.timeout_s}s") from exc
+                raise TimeoutError(
+                    f"Gnani.ai STT request timed out after {self.timeout_s}s"
+                ) from exc
 
             if response.status_code != 200:
                 logger.error("Gnani.ai STT error %d: %s", response.status_code, response.text[:200])
@@ -72,7 +75,11 @@ class GnaniSTTProvider:
                 transcript_text = (
                     res_json.get("transcript")
                     or res_json.get("text")
-                    or (res_json.get("data", {}).get("transcript") if isinstance(res_json.get("data"), dict) else "")
+                    or (
+                        res_json.get("data", {}).get("transcript")
+                        if isinstance(res_json.get("data"), dict)
+                        else ""
+                    )
                     or ""
                 )
 

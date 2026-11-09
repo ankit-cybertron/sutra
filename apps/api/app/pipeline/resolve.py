@@ -78,7 +78,11 @@ def resolve(claims: list[Claim]) -> tuple[list[Decision], list[RevisionTrace]]:
 
         # Determine final decision
         # Filter for active assert or revise
-        active_decisive = [c for c in open_claims if c.id not in superseded_set and c.stance in ("assert", "revise")]
+        active_decisive = [
+            c
+            for c in open_claims
+            if c.id not in superseded_set and c.stance in ("assert", "revise")
+        ]
         last_claim = topic_claims[-1]
 
         # If last stance was retract, topic is dropped from decisions
@@ -89,11 +93,15 @@ def resolve(claims: list[Claim]) -> tuple[list[Decision], list[RevisionTrace]]:
         # Invariant 6: Superseded values
         superseded_vals = [
             claim_map[cid].value
-            for cid in sorted(superseded_set, key=lambda cid: (claim_map[cid].span.start, claim_map[cid].span.end))
+            for cid in sorted(
+                superseded_set, key=lambda cid: (claim_map[cid].span.start, claim_map[cid].span.end)
+            )
             if claim_map[cid].value != final_claim.value
         ]
 
-        evidence_spans = [c.span for c in topic_claims if c.stance in ("assert", "revise", "retract")]
+        evidence_spans = [
+            c.span for c in topic_claims if c.stance in ("assert", "revise", "retract")
+        ]
 
         # Invariant 5: Final value always equals the value of some claim in that topic
         decisions.append(

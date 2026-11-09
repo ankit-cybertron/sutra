@@ -2,6 +2,7 @@
 Project repository — CRUD against the `projects` table via asyncpg.
 All queries run inside user_transaction() which sets RLS context.
 """
+
 from __future__ import annotations
 
 import uuid

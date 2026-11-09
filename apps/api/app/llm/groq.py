@@ -3,6 +3,7 @@ Groq API adapter for LLMProvider protocol.
 Uses llama-3.3-70b-versatile as default for ultra-fast, high quality structured output.
 Leverages Groq's JSON mode (response_format={"type": "json_object"}).
 """
+
 from __future__ import annotations
 
 import json
@@ -47,9 +48,7 @@ class GroqLLMProvider:
         effective_timeout = timeout_s if timeout_s is not None else self.timeout_s
         json_schema = schema.model_json_schema()
         schema_hint = json.dumps(json_schema, indent=2)
-        augmented_user = (
-            f"{user}\n\nRespond ONLY with valid JSON matching this schema:\n```json\n{schema_hint}\n```"
-        )
+        augmented_user = f"{user}\n\nRespond ONLY with valid JSON matching this schema:\n```json\n{schema_hint}\n```"
 
         raw = await self._call(system, augmented_user, temperature, effective_timeout)
         try:

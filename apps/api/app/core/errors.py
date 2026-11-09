@@ -63,7 +63,9 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     req_id = request_id_ctx.get()
     return make_problem_response(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

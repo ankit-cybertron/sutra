@@ -1,4 +1,5 @@
 """Speech-to-Text (STT) Provider Protocol."""
+
 from __future__ import annotations
 
 from typing import Protocol

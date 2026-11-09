@@ -1,6 +1,7 @@
 """
 LLM provider factory — selects implementation based on LLM_PROVIDER setting.
 """
+
 from __future__ import annotations
 
 from app.core.config import Settings
@@ -52,4 +53,6 @@ def build_llm_provider(settings: Settings) -> LLMProvider:
             timeout_s=settings.LLM_TIMEOUT_S,
         )
 
-    raise ValueError(f"Unknown LLM_PROVIDER: {settings.LLM_PROVIDER!r}. Expected: fake, anthropic, openai, gemini")
+    raise ValueError(
+        f"Unknown LLM_PROVIDER: {settings.LLM_PROVIDER!r}. Expected: fake, anthropic, openai, gemini"
+    )

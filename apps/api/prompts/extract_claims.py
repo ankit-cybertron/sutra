@@ -66,4 +66,3 @@ Assumptions:
 <<<END_INPUTS>>>
 
 Generate the complete Spec JSON."""
-

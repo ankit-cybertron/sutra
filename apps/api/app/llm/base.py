@@ -14,5 +14,4 @@ class LLMProvider(Protocol):
         schema: type[T],
         temperature: float = 0.0,
         timeout_s: float = 30.0,
-    ) -> T:
-        ...
+    ) -> T: ...

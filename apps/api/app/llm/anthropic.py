@@ -2,6 +2,7 @@
 Anthropic Claude adapter for LLMProvider protocol.
 Uses claude-3-5-haiku as default for cost efficiency.
 """
+
 from __future__ import annotations
 
 import json
@@ -40,9 +41,7 @@ class AnthropicLLMProvider:
         effective_timeout = timeout_s if timeout_s is not None else self.timeout_s
         json_schema = schema.model_json_schema()
         schema_hint = json.dumps(json_schema, indent=2)
-        augmented_user = (
-            f"{user}\n\nRespond ONLY with valid JSON matching this schema:\n```json\n{schema_hint}\n```"
-        )
+        augmented_user = f"{user}\n\nRespond ONLY with valid JSON matching this schema:\n```json\n{schema_hint}\n```"
 
         raw = await self._call(system, augmented_user, temperature, effective_timeout)
         try:

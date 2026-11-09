@@ -2,6 +2,7 @@
 Google Gemini adapter for LLMProvider protocol.
 Uses gemini-1.5-flash as default. Leverages JSON response type for structured output.
 """
+
 from __future__ import annotations
 
 import json
@@ -19,7 +20,9 @@ class GeminiLLMProvider:
     One repair retry on invalid JSON.
     """
 
-    def __init__(self, model: str = "gemini-1.5-flash", api_key: str = "", timeout_s: float = 30.0) -> None:
+    def __init__(
+        self, model: str = "gemini-1.5-flash", api_key: str = "", timeout_s: float = 30.0
+    ) -> None:
         import google.generativeai as genai
 
         genai.configure(api_key=api_key)

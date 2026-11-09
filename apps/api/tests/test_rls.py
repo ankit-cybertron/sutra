@@ -29,7 +29,9 @@ async def user_a(test_settings):
     uid = uuid.uuid4()
     conn = await asyncpg.connect(test_settings.DATABASE_URL)
     try:
-        await conn.execute("INSERT INTO auth.users (id, email) VALUES ($1, $2)", uid, "user_a@example.com")
+        await conn.execute(
+            "INSERT INTO auth.users (id, email) VALUES ($1, $2)", uid, "user_a@example.com"
+        )
     finally:
         await conn.close()
     return AuthenticatedUser(
@@ -45,7 +47,9 @@ async def user_b(test_settings):
     uid = uuid.uuid4()
     conn = await asyncpg.connect(test_settings.DATABASE_URL)
     try:
-        await conn.execute("INSERT INTO auth.users (id, email) VALUES ($1, $2)", uid, "user_b@example.com")
+        await conn.execute(
+            "INSERT INTO auth.users (id, email) VALUES ($1, $2)", uid, "user_b@example.com"
+        )
     finally:
         await conn.close()
     return AuthenticatedUser(
@@ -62,7 +66,9 @@ async def test_projects_rls_isolation(test_settings, user_a, user_b):
     async with user_transaction(user_a, test_settings) as conn:
         await conn.execute(
             "INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)",
-            project_id, user_a.user_id, "User A Project"
+            project_id,
+            user_a.user_id,
+            "User A Project",
         )
         row = await conn.fetchrow("SELECT id, name FROM projects WHERE id = $1", project_id)
         assert row is not None
@@ -97,11 +103,15 @@ async def test_sessions_cross_user_denial_and_parent_check(test_settings, user_a
     async with user_transaction(user_a, test_settings) as conn:
         await conn.execute(
             "INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)",
-            project_a, user_a.user_id, "Project A"
+            project_a,
+            user_a.user_id,
+            "Project A",
         )
         await conn.execute(
             "INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)",
-            session_a, user_a.user_id, project_a
+            session_a,
+            user_a.user_id,
+            project_a,
         )
 
     # User B cannot select session A
@@ -114,7 +124,9 @@ async def test_sessions_cross_user_denial_and_parent_check(test_settings, user_a
         with pytest.raises(asyncpg.RaiseError, match="owner mismatch with parent projects"):
             await conn.execute(
                 "INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)",
-                session_b_bad, user_b.user_id, project_a
+                session_b_bad,
+                user_b.user_id,
+                project_a,
             )
 
 
@@ -126,18 +138,34 @@ async def test_transcripts_and_extractions_rls(test_settings, user_a, user_b):
     extraction_a = uuid.uuid4()
 
     async with user_transaction(user_a, test_settings) as conn:
-        await conn.execute("INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)", project_a, user_a.user_id, "PA")
-        await conn.execute("INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)", session_a, user_a.user_id, project_a)
+        await conn.execute(
+            "INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)",
+            project_a,
+            user_a.user_id,
+            "PA",
+        )
+        await conn.execute(
+            "INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)",
+            session_a,
+            user_a.user_id,
+            project_a,
+        )
         await conn.execute(
             "INSERT INTO transcripts (id, owner_id, session_id, raw_text) VALUES ($1, $2, $3, $4)",
-            transcript_a, user_a.user_id, session_a, "Dictated ramble text here"
+            transcript_a,
+            user_a.user_id,
+            session_a,
+            "Dictated ramble text here",
         )
         await conn.execute(
             """
             INSERT INTO extractions (id, owner_id, session_id, transcript_id, claims, decisions, revision_trace, provider, model, prompt_version)
             VALUES ($1, $2, $3, $4, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'fake', 'fake-v1', '1.0')
             """,
-            extraction_a, user_a.user_id, session_a, transcript_a
+            extraction_a,
+            user_a.user_id,
+            session_a,
+            transcript_a,
         )
 
     # User B cannot select User A's transcript or extraction
@@ -149,7 +177,10 @@ async def test_transcripts_and_extractions_rls(test_settings, user_a, user_b):
         with pytest.raises(asyncpg.RaiseError, match="owner mismatch with parent sessions"):
             await conn.execute(
                 "INSERT INTO transcripts (id, owner_id, session_id, raw_text) VALUES ($1, $2, $3, $4)",
-                uuid.uuid4(), user_b.user_id, session_a, "Tampering attempt"
+                uuid.uuid4(),
+                user_b.user_id,
+                session_a,
+                "Tampering attempt",
             )
 
 
@@ -161,15 +192,32 @@ async def test_questions_and_answers_rls(test_settings, user_a, user_b):
     answer_a = uuid.uuid4()
 
     async with user_transaction(user_a, test_settings) as conn:
-        await conn.execute("INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)", project_a, user_a.user_id, "PA")
-        await conn.execute("INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)", session_a, user_a.user_id, project_a)
+        await conn.execute(
+            "INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)",
+            project_a,
+            user_a.user_id,
+            "PA",
+        )
+        await conn.execute(
+            "INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)",
+            session_a,
+            user_a.user_id,
+            project_a,
+        )
         await conn.execute(
             "INSERT INTO questions (id, owner_id, session_id, text, why_it_matters, impact) VALUES ($1, $2, $3, $4, $5, 1)",
-            question_a, user_a.user_id, session_a, "What auth provider?", "Affects database"
+            question_a,
+            user_a.user_id,
+            session_a,
+            "What auth provider?",
+            "Affects database",
         )
         await conn.execute(
             "INSERT INTO answers (id, owner_id, question_id, body) VALUES ($1, $2, $3, $4)",
-            answer_a, user_a.user_id, question_a, "Supabase magic link"
+            answer_a,
+            user_a.user_id,
+            question_a,
+            "Supabase magic link",
         )
 
     # User B cannot read question or answer
@@ -181,7 +229,10 @@ async def test_questions_and_answers_rls(test_settings, user_a, user_b):
         with pytest.raises(asyncpg.RaiseError, match="owner mismatch with parent questions"):
             await conn.execute(
                 "INSERT INTO answers (id, owner_id, question_id, body) VALUES ($1, $2, $3, $4)",
-                uuid.uuid4(), user_b.user_id, question_a, "Malicious answer"
+                uuid.uuid4(),
+                user_b.user_id,
+                question_a,
+                "Malicious answer",
             )
 
 
@@ -193,18 +244,34 @@ async def test_assumptions_and_spec_versions_rls(test_settings, user_a, user_b):
     spec_v_a = uuid.uuid4()
 
     async with user_transaction(user_a, test_settings) as conn:
-        await conn.execute("INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)", project_a, user_a.user_id, "PA")
-        await conn.execute("INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)", session_a, user_a.user_id, project_a)
+        await conn.execute(
+            "INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)",
+            project_a,
+            user_a.user_id,
+            "PA",
+        )
+        await conn.execute(
+            "INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)",
+            session_a,
+            user_a.user_id,
+            project_a,
+        )
         await conn.execute(
             "INSERT INTO assumptions (id, owner_id, session_id, statement, risk) VALUES ($1, $2, $3, $4, 'low')",
-            assumption_a, user_a.user_id, session_a, "Assumption text"
+            assumption_a,
+            user_a.user_id,
+            session_a,
+            "Assumption text",
         )
         await conn.execute(
             """
             INSERT INTO spec_versions (id, owner_id, project_id, session_id, version, spec, markdown, readiness, readiness_detail)
             VALUES ($1, $2, $3, $4, 1, '{"title":"Clinic"}'::jsonb, '# Clinic', 85, '[]'::jsonb)
             """,
-            spec_v_a, user_a.user_id, project_a, session_a
+            spec_v_a,
+            user_a.user_id,
+            project_a,
+            session_a,
         )
 
     # User B cannot read assumption or spec_version
@@ -219,15 +286,17 @@ async def test_assumptions_and_spec_versions_rls(test_settings, user_a, user_b):
                 INSERT INTO spec_versions (id, owner_id, project_id, session_id, version, spec, markdown, readiness, readiness_detail)
                 VALUES ($1, $2, $3, $4, 2, '{"title":"Exploit"}'::jsonb, '# Exploit', 90, '[]'::jsonb)
                 """,
-                uuid.uuid4(), user_b.user_id, project_a, session_a
+                uuid.uuid4(),
+                user_b.user_id,
+                project_a,
+                session_a,
             )
 
     # Immutability check: Owner A cannot update spec_version content
     async with user_transaction(user_a, test_settings) as conn:
         with pytest.raises(asyncpg.RaiseError, match="spec_versions rows are immutable"):
             await conn.execute(
-                "UPDATE spec_versions SET markdown = '# Modified' WHERE id = $1",
-                spec_v_a
+                "UPDATE spec_versions SET markdown = '# Modified' WHERE id = $1", spec_v_a
             )
 
 
@@ -239,18 +308,33 @@ async def test_exports_rls(test_settings, user_a, user_b):
     export_a = uuid.uuid4()
 
     async with user_transaction(user_a, test_settings) as conn:
-        await conn.execute("INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)", project_a, user_a.user_id, "PA")
-        await conn.execute("INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)", session_a, user_a.user_id, project_a)
+        await conn.execute(
+            "INSERT INTO projects (id, owner_id, name) VALUES ($1, $2, $3)",
+            project_a,
+            user_a.user_id,
+            "PA",
+        )
+        await conn.execute(
+            "INSERT INTO sessions (id, owner_id, project_id) VALUES ($1, $2, $3)",
+            session_a,
+            user_a.user_id,
+            project_a,
+        )
         await conn.execute(
             """
             INSERT INTO spec_versions (id, owner_id, project_id, session_id, version, spec, markdown, readiness, readiness_detail)
             VALUES ($1, $2, $3, $4, 1, '{}'::jsonb, '# M', 80, '[]'::jsonb)
             """,
-            spec_v_a, user_a.user_id, project_a, session_a
+            spec_v_a,
+            user_a.user_id,
+            project_a,
+            session_a,
         )
         await conn.execute(
             "INSERT INTO exports (id, owner_id, spec_version_id, format, agent) VALUES ($1, $2, $3, 'md', 'antigravity')",
-            export_a, user_a.user_id, spec_v_a
+            export_a,
+            user_a.user_id,
+            spec_v_a,
         )
 
     # User B cannot see User A's export
@@ -261,5 +345,7 @@ async def test_exports_rls(test_settings, user_a, user_b):
         with pytest.raises(asyncpg.RaiseError, match="owner mismatch with parent spec_versions"):
             await conn.execute(
                 "INSERT INTO exports (id, owner_id, spec_version_id, format, agent) VALUES ($1, $2, $3, 'zip', 'cursor')",
-                uuid.uuid4(), user_b.user_id, spec_v_a
+                uuid.uuid4(),
+                user_b.user_id,
+                spec_v_a,
             )

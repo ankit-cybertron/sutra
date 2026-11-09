@@ -39,6 +39,7 @@ RUN groupadd -g 1001 appgroup && \
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=appuser:appgroup app ./app
+COPY --chown=appuser:appgroup prompts ./prompts
 
 USER appuser
 

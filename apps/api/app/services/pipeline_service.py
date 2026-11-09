@@ -2,6 +2,7 @@
 Pipeline Service — coordinates pipeline execution, stage timing, SSE events, and DB persistence.
 Follows ARCHITECTURE.md: pipeline functions remain pure; I/O is managed here in services.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,15 @@ from app.pipeline.normalize import normalize
 from app.pipeline.render import render
 from app.pipeline.resolve import resolve
 from app.pipeline.score import score
+from app.prompts.extract_claims import (
+    COMPILE_SPEC_SYSTEM,
+    COMPILE_SPEC_USER,
+    EXTRACT_CLAIMS_SYSTEM,
+    EXTRACT_CLAIMS_USER,
+    EXTRACT_CLAIMS_VERSION,
+    GAP_ANALYSIS_SYSTEM,
+    GAP_ANALYSIS_USER,
+)
 from app.repos.database import user_transaction
 from app.repos.sessions import (
     create_spec_version,
@@ -27,15 +37,6 @@ from app.repos.sessions import (
     update_session_status,
 )
 from app.schemas.spec import Spec
-from prompts.extract_claims import (
-    COMPILE_SPEC_SYSTEM,
-    COMPILE_SPEC_USER,
-    EXTRACT_CLAIMS_SYSTEM,
-    EXTRACT_CLAIMS_USER,
-    EXTRACT_CLAIMS_VERSION,
-    GAP_ANALYSIS_SYSTEM,
-    GAP_ANALYSIS_USER,
-)
 
 logger = get_logger("voxspec.services.pipeline")
 
@@ -67,7 +68,9 @@ async def stream_analyze(
         yield format_sse("stage", {"stage": "normalize", "status": "done", "ms": s1_ms})
     except Exception as exc:  # noqa: BLE001
         s1_ms = int((time.perf_counter() - s1_start) * 1000)
-        yield format_sse("stage", {"stage": "normalize", "status": "failed", "error": str(exc), "ms": s1_ms})
+        yield format_sse(
+            "stage", {"stage": "normalize", "status": "failed", "error": str(exc), "ms": s1_ms}
+        )
         return
 
     # ── Stage 2: Extract Claims ─────────────────────────────────────────────
@@ -81,10 +84,15 @@ async def stream_analyze(
         )
         claims = extraction_result.claims
         s2_ms = int((time.perf_counter() - s2_start) * 1000)
-        yield format_sse("stage", {"stage": "extract", "status": "done", "ms": s2_ms, "claims_count": len(claims)})
+        yield format_sse(
+            "stage",
+            {"stage": "extract", "status": "done", "ms": s2_ms, "claims_count": len(claims)},
+        )
     except Exception as exc:  # noqa: BLE001
         s2_ms = int((time.perf_counter() - s2_start) * 1000)
-        yield format_sse("stage", {"stage": "extract", "status": "failed", "error": str(exc), "ms": s2_ms})
+        yield format_sse(
+            "stage", {"stage": "extract", "status": "failed", "error": str(exc), "ms": s2_ms}
+        )
         return
 
     # ── Stage 3: Resolve Intent ─────────────────────────────────────────────
@@ -93,16 +101,21 @@ async def stream_analyze(
     try:
         decisions, traces = resolve(claims)
         s3_ms = int((time.perf_counter() - s3_start) * 1000)
-        yield format_sse("stage", {
-            "stage": "resolve",
-            "status": "done",
-            "ms": s3_ms,
-            "decisions_count": len(decisions),
-            "traces_count": len(traces),
-        })
+        yield format_sse(
+            "stage",
+            {
+                "stage": "resolve",
+                "status": "done",
+                "ms": s3_ms,
+                "decisions_count": len(decisions),
+                "traces_count": len(traces),
+            },
+        )
     except Exception as exc:  # noqa: BLE001
         s3_ms = int((time.perf_counter() - s3_start) * 1000)
-        yield format_sse("stage", {"stage": "resolve", "status": "failed", "error": str(exc), "ms": s3_ms})
+        yield format_sse(
+            "stage", {"stage": "resolve", "status": "failed", "error": str(exc), "ms": s3_ms}
+        )
         return
 
     # ── Stage 4: Gap Analysis ───────────────────────────────────────────────
@@ -118,16 +131,21 @@ async def stream_analyze(
         # Cap questions at 3 high-impact questions per PRD
         capped_questions = sorted(gap_result.questions, key=lambda q: q.impact, reverse=True)[:3]
         s4_ms = int((time.perf_counter() - s4_start) * 1000)
-        yield format_sse("stage", {
-            "stage": "gaps",
-            "status": "done",
-            "ms": s4_ms,
-            "assumptions_count": len(gap_result.assumptions),
-            "questions_count": len(capped_questions),
-        })
+        yield format_sse(
+            "stage",
+            {
+                "stage": "gaps",
+                "status": "done",
+                "ms": s4_ms,
+                "assumptions_count": len(gap_result.assumptions),
+                "questions_count": len(capped_questions),
+            },
+        )
     except Exception as exc:  # noqa: BLE001
         s4_ms = int((time.perf_counter() - s4_start) * 1000)
-        yield format_sse("stage", {"stage": "gaps", "status": "failed", "error": str(exc), "ms": s4_ms})
+        yield format_sse(
+            "stage", {"stage": "gaps", "status": "failed", "error": str(exc), "ms": s4_ms}
+        )
         return
 
     # ── Persist to Database ─────────────────────────────────────────────────
@@ -158,15 +176,18 @@ async def stream_analyze(
         await update_session_status(conn, session_id=session_id, status="analyzed")
 
     total_ms = int((time.perf_counter() - total_start) * 1000)
-    yield format_sse("complete", {
-        "extraction_id": saved["id"],
-        "session_id": session_id,
-        "total_ms": total_ms,
-        "decisions": decisions_dict,
-        "traces": traces_dict,
-        "assumptions": assumptions_dict,
-        "questions": saved.get("questions", questions_dict),
-    })
+    yield format_sse(
+        "complete",
+        {
+            "extraction_id": saved["id"],
+            "session_id": session_id,
+            "total_ms": total_ms,
+            "decisions": decisions_dict,
+            "traces": traces_dict,
+            "assumptions": assumptions_dict,
+            "questions": saved.get("questions", questions_dict),
+        },
+    )
 
 
 async def stream_compile(
@@ -207,10 +228,14 @@ async def stream_compile(
             schema=Spec,
         )
         s1_ms = int((time.perf_counter() - s1_start) * 1000)
-        yield format_sse("stage", {"stage": "compile", "status": "done", "ms": s1_ms, "title": spec.title})
+        yield format_sse(
+            "stage", {"stage": "compile", "status": "done", "ms": s1_ms, "title": spec.title}
+        )
     except Exception as exc:  # noqa: BLE001
         s1_ms = int((time.perf_counter() - s1_start) * 1000)
-        yield format_sse("stage", {"stage": "compile", "status": "failed", "error": str(exc), "ms": s1_ms})
+        yield format_sse(
+            "stage", {"stage": "compile", "status": "failed", "error": str(exc), "ms": s1_ms}
+        )
         return
 
     # ── Stage 2: Readiness Score ────────────────────────────────────────────
@@ -220,15 +245,20 @@ async def stream_compile(
         unanswered_count = max(0, len(extraction["questions"]) - len(answers_dict))
         readiness = score(spec, unanswered_questions_count=unanswered_count)
         s2_ms = int((time.perf_counter() - s2_start) * 1000)
-        yield format_sse("stage", {
-            "stage": "score",
-            "status": "done",
-            "ms": s2_ms,
-            "score": readiness.score,
-        })
+        yield format_sse(
+            "stage",
+            {
+                "stage": "score",
+                "status": "done",
+                "ms": s2_ms,
+                "score": readiness.score,
+            },
+        )
     except Exception as exc:  # noqa: BLE001
         s2_ms = int((time.perf_counter() - s2_start) * 1000)
-        yield format_sse("stage", {"stage": "score", "status": "failed", "error": str(exc), "ms": s2_ms})
+        yield format_sse(
+            "stage", {"stage": "score", "status": "failed", "error": str(exc), "ms": s2_ms}
+        )
         return
 
     # ── Stage 3: Render Markdown ────────────────────────────────────────────
@@ -240,7 +270,9 @@ async def stream_compile(
         yield format_sse("stage", {"stage": "render", "status": "done", "ms": s3_ms})
     except Exception as exc:  # noqa: BLE001
         s3_ms = int((time.perf_counter() - s3_start) * 1000)
-        yield format_sse("stage", {"stage": "render", "status": "failed", "error": str(exc), "ms": s3_ms})
+        yield format_sse(
+            "stage", {"stage": "render", "status": "failed", "error": str(exc), "ms": s3_ms}
+        )
         return
 
     # ── Persist to Database ─────────────────────────────────────────────────
@@ -258,11 +290,14 @@ async def stream_compile(
         await update_session_status(conn, session_id=session_id, status="compiled")
 
     total_ms = int((time.perf_counter() - total_start) * 1000)
-    yield format_sse("complete", {
-        "spec_version_id": spec_version["id"],
-        "session_id": session_id,
-        "readiness_score": readiness.score,
-        "score_breakdown": [b.model_dump() for b in readiness.breakdown],
-        "total_ms": total_ms,
-        "markdown": rendered_md,
-    })
+    yield format_sse(
+        "complete",
+        {
+            "spec_version_id": spec_version["id"],
+            "session_id": session_id,
+            "readiness_score": readiness.score,
+            "score_breakdown": [b.model_dump() for b in readiness.breakdown],
+            "total_ms": total_ms,
+            "markdown": rendered_md,
+        },
+    )

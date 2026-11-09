@@ -9,6 +9,7 @@ Phase 3 Integration Tests:
 - Audio transcription endpoint (Gnani.ai / Fake STT)
 - Rate limiting protection
 """
+
 from __future__ import annotations
 
 import io
@@ -230,9 +231,7 @@ async def test_analyze_rate_limiting(app_with_user) -> None:
     app = create_app(settings)
     app.dependency_overrides[get_current_user] = lambda: user
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create project, session, transcript
         p = (await client.post("/v1/projects", json={"name": "Rate Limit Proj"})).json()
         s = (await client.post(f"/v1/projects/{p['id']}/sessions")).json()
