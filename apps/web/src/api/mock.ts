@@ -2,6 +2,7 @@ import { ApiError } from "./errors";
 import type {
   Api,
   AnswerInput,
+  ArchitectureDiagramResult,
   ChatInput,
   ChatResult,
   CreateSessionInput,
@@ -273,6 +274,29 @@ export const mockApi: Api = {
         groq: { status: "mock", model: "mock", lastError: null },
         gnani: { status: "mock", mode: "mock", lastError: null },
       },
+    };
+  },
+
+  async generateArchitectureDiagram(planId: string): Promise<ArchitectureDiagramResult> {
+    await delay(600);
+    return {
+      planId,
+      mermaid: `flowchart TD
+    subgraph Client ["Client Layer"]
+        UI["React Web Application"]
+    end
+    subgraph Backend ["Backend API Gateway"]
+        API["FastAPI Services"]
+    end
+    subgraph Storage ["Database & Storage"]
+        DB[("PostgreSQL")]
+        Cache[("Redis")]
+    end
+    Client --> API
+    API --> DB
+    API --> Cache`,
+      model: "mock-gemini-2.5-flash",
+      status: "success",
     };
   },
 };

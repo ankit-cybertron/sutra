@@ -371,19 +371,25 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Restore a plan from the URL hash (#p=<id>) after a reload.
+  // Restore a plan from the URL hash (#p=<id>) after a reload or hash change.
   useEffect(() => {
-    const m = /^#p=([\w-]+)$/.exec(window.location.hash);
-    const id = m?.[1];
-    if (!id) return;
-    api
-      .getPlan(id)
-      .then((d) => {
-        setDoc(d);
-        setMessages([{ id: uid(), role: "ai", text: t(langRef.current, "chatHello"), source: "text", ts: Date.now() }]);
-        setStage("plan");
-      })
-      .catch(() => window.history.replaceState(null, "", window.location.pathname + window.location.search));
+    const checkHash = () => {
+      const m = /^#p=([\w-]+)$/.exec(window.location.hash);
+      const id = m?.[1];
+      if (!id) return;
+      api
+        .getPlan(id)
+        .then((d) => {
+          setDoc(d);
+          setMessages([{ id: uid(), role: "ai", text: t(langRef.current, "chatHello"), source: "text", ts: Date.now() }]);
+          setStage("plan");
+        })
+        .catch(() => window.history.replaceState(null, "", window.location.pathname + window.location.search));
+    };
+
+    checkHash();
+    window.addEventListener("hashchange", checkHash);
+    return () => window.removeEventListener("hashchange", checkHash);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -182,4 +182,39 @@ test.describe("Sutra End-to-End Real Backend Integration", () => {
     await expect(page.locator(".btn-cta")).toBeVisible();
     await page.screenshot({ path: "docs/evidence/integration/08-mobile-viewport-390x844.png" });
   });
+
+  test("Flow 8: Generate Architecture Image in Architecture section", async ({ page }) => {
+    test.setTimeout(45_000);
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const ideaBox = page.locator("#idea");
+    await ideaBox.fill("This is a fully specific no questions architecture blueprint for a doctor clinic booking app.");
+    await page.locator(".btn-cta").click();
+
+    // Plan card should be visible
+    await expect(page.locator("article.plan")).toBeVisible({ timeout: 15_000 });
+
+    // The Generate Architecture Image button should be prominently visible in the Architecture section
+    const archSection = page.locator(".architecture-section");
+    await expect(archSection).toBeVisible();
+    const genBtn = archSection.locator(".btn-arch-action");
+    await expect(genBtn).toBeVisible();
+    await expect(genBtn).toContainText("Generate Architecture Image");
+
+    // Click Generate Architecture Image
+    await genBtn.click();
+
+    // Viewport should render the SVG diagram
+    const svgViewport = archSection.locator(".arch-svg-viewport svg");
+    await expect(svgViewport).toBeVisible({ timeout: 35_000 });
+
+    // Verify action buttons are present: View Full-Size, SVG, PNG, Regenerate
+    await expect(archSection.getByText("View Full-Size")).toBeVisible();
+    await expect(archSection.getByText("SVG")).toBeVisible();
+    await expect(archSection.getByText("PNG")).toBeVisible();
+    await expect(archSection.getByText("Regenerate")).toBeVisible();
+
+    await page.screenshot({ path: "docs/evidence/integration/09-architecture-image-generated.png" });
+  });
 });

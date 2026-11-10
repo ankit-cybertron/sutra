@@ -3,6 +3,7 @@ import type { Lang, PlanDoc } from "../api/types";
 import { BRAND } from "../brand";
 import { t } from "../lib/i18n";
 import { downloadText, planToMarkdown, slug } from "../lib/markdown";
+import { ArchitectureDiagram } from "./ArchitectureDiagram";
 import { IconCheck, IconCopy, IconDownload } from "./Icons";
 
 interface Props {
@@ -138,9 +139,10 @@ export function PlanCard({ doc, lang }: Props) {
           </ol>
         </section>
 
-        <section>
+        <section className="architecture-section" id="architecture">
           <h3 className="plan-label">{t(lang, "pTech")}</h3>
           <p>{plan.techNotes}</p>
+          <ArchitectureDiagram doc={doc} />
         </section>
 
         <div className="two">

@@ -1,7 +1,9 @@
 """Plan endpoints: Viewing, chat refinements, version history, deletion, and markdown export."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, Response
+from pydantic import BaseModel
+from apps.api.app.adapters.gemini import get_gemini_adapter
 from apps.api.app.dependencies import get_device_id, chat_rate_limiter, standard_rate_limiter
 from apps.api.app.schemas import (
     ChatInput,
@@ -72,6 +74,36 @@ async def export_plan_markdown(
             "Content-Disposition": f'attachment; filename="{plan_id}.md"',
         },
     )
+
+
+class ArchitectureDiagramRequest(BaseModel):
+    markdown: Optional[str] = None
+
+
+@router.post("/plans/{plan_id}/architecture-diagram")
+async def generate_architecture_diagram(
+    plan_id: str,
+    body: Optional[ArchitectureDiagramRequest] = None,
+    device_id: str = Depends(get_device_id),
+) -> Dict[str, Any]:
+    """Generates a Mermaid architecture diagram for the given plan using Gemini 2.5 Flash."""
+    plan_service = get_plan_service()
+
+    md_content = body.markdown if (body and body.markdown) else None
+    if not md_content:
+        md_content = await plan_service.export_markdown(device_id=device_id, plan_id=plan_id)
+
+    gemini_adapter = get_gemini_adapter()
+    result = await gemini_adapter.generate_architecture_diagram(md_content)
+
+    return {
+        "planId": plan_id,
+        "mermaid": result["mermaid"],
+        "fallbackMermaid": result.get("fallbackMermaid"),
+        "model": result.get("model", "gemini-2.5-flash"),
+        "status": result.get("status", "success"),
+        "notice": result.get("notice"),
+    }
 
 
 @router.delete("/data")

@@ -122,6 +122,15 @@ export interface HealthResponse {
   groqModel?: string;
 }
 
+export interface ArchitectureDiagramResult {
+  planId: string;
+  mermaid: string;
+  fallbackMermaid?: string;
+  model?: string;
+  status?: string;
+  notice?: string;
+}
+
 export interface Api {
   createSession(input: CreateSessionInput): Promise<CreateSessionResult>;
   generatePlan(sessionId: string, answers: AnswerInput[]): Promise<PlanDoc>;
@@ -129,4 +138,5 @@ export interface Api {
   getPlan(planId: string): Promise<PlanDoc>;
   tts(text: string, lang: Lang): Promise<Blob>;
   health(): Promise<HealthResponse>;
+  generateArchitectureDiagram(planId: string, markdown?: string): Promise<ArchitectureDiagramResult>;
 }

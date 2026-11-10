@@ -3,11 +3,56 @@ import { api } from "../api";
 import type { Lang } from "../api/types";
 import { USE_MOCK } from "../lib/config";
 
-// Plays the AI's spoken lines.
-//   real mode: POST /api/tts -> Gnani Timbre audio (cached server-side) -> <audio>
-//   mock mode: the browser's speechSynthesis
-// Resolves true if audio played to the end, false if it was blocked, failed or interrupted.
-// Browsers block audio until the user has interacted once, which is why the mic gate is a click.
+// Consistent natural female voice selection
+function getNaturalFemaleVoice(lang: Lang): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) return null;
+
+  const isHindi = lang === "hi";
+
+  // Prioritized list of known natural female voices
+  const preferredFemaleNames = isHindi
+    ? [
+        "Lekha",
+        "Google हिन्दी",
+        "Kalpana",
+        "Neerja",
+        "Swara",
+        "Kavya",
+        "Veena",
+        "Heera",
+      ]
+    : [
+        "Samantha",
+        "Karen",
+        "Victoria",
+        "Moira",
+        "Google UK English Female",
+        "Google US English",
+        "Zira",
+        "Jenny",
+        "Sonia",
+        "Fiona",
+        "Tessa",
+      ];
+
+  for (const name of preferredFemaleNames) {
+    const match = voices.find((v) => v.name.toLowerCase().includes(name.toLowerCase()));
+    if (match) return match;
+  }
+
+  // Fallback: search for any voice containing 'female' in target language or general
+  const femaleLang = voices.find(
+    (v) =>
+      v.lang.toLowerCase().startsWith(isHindi ? "hi" : "en") &&
+      v.name.toLowerCase().includes("female"),
+  );
+  if (femaleLang) return femaleLang;
+
+  const anyLang = voices.find((v) => v.lang.toLowerCase().startsWith(isHindi ? "hi" : "en"));
+  return anyLang || voices[0] || null;
+}
 
 export function useSpeaker() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -16,9 +61,32 @@ export function useSpeaker() {
   const stop = useCallback(() => {
     audioRef.current?.pause();
     audioRef.current = null;
-    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     pendingRef.current?.();
     pendingRef.current = null;
+  }, []);
+
+  const speakWithSynthesis = useCallback((line: string, lang: Lang): Promise<boolean> => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return Promise.resolve(false);
+
+    return new Promise<boolean>((resolve) => {
+      const u = new SpeechSynthesisUtterance(line);
+      u.lang = lang === "hi" ? "hi-IN" : "en-IN";
+      u.rate = 1.0;
+      u.pitch = 1.05; // Slightly higher pitch for natural female clarity
+
+      const voice = getNaturalFemaleVoice(lang);
+      if (voice) {
+        u.voice = voice;
+      }
+
+      u.onend = () => resolve(true);
+      u.onerror = () => resolve(false);
+      pendingRef.current = () => resolve(false);
+      window.speechSynthesis.speak(u);
+    });
   }, []);
 
   const speak = useCallback(
@@ -26,43 +94,39 @@ export function useSpeaker() {
       stop();
       const line = text.trim().slice(0, 240);
       if (!line) return false;
+
       try {
         if (!USE_MOCK) {
           try {
             const blob = await api.tts(line, lang);
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            await new Promise<void>((resolve, reject) => {
-              pendingRef.current = resolve;
-              audio.onended = () => resolve();
-              audio.onerror = () => reject(new Error("audio"));
-              audio.play().catch(reject);
-            });
-            URL.revokeObjectURL(url);
-            return true;
+            // If the blob is audio/mpeg, it's real Gnani Timbre audio
+            if (blob.type === "audio/mpeg" || blob.size > 20000) {
+              const url = URL.createObjectURL(blob);
+              const audio = new Audio(url);
+              audioRef.current = audio;
+              await new Promise<void>((resolve, reject) => {
+                pendingRef.current = resolve;
+                audio.onended = () => resolve();
+                audio.onerror = () => reject(new Error("audio"));
+                audio.play().catch(reject);
+              });
+              URL.revokeObjectURL(url);
+              return true;
+            }
           } catch {
-            // Backend TTS network error: fall back to browser speech synthesis
+            // Backend TTS network error: fall back to speech synthesis
           }
         }
-        if (typeof window !== "undefined" && "speechSynthesis" in window) {
-          return await new Promise<boolean>((resolve) => {
-            const u = new SpeechSynthesisUtterance(line);
-            u.lang = lang === "en" ? "en-IN" : "hi-IN";
-            u.onend = () => resolve(true);
-            u.onerror = () => resolve(false);
-            pendingRef.current = () => resolve(false);
-            window.speechSynthesis.speak(u);
-          });
-        }
-        return false;
+
+        // Use natural female WebSpeech synthesis
+        return await speakWithSynthesis(line, lang);
       } catch {
         return false;
       } finally {
         pendingRef.current = null;
       }
     },
-    [stop],
+    [stop, speakWithSynthesis],
   );
 
   return { speak, stop };

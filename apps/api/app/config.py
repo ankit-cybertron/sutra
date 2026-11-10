@@ -53,6 +53,9 @@ class Settings(BaseModel):
 
     # Groq LLM
     groq_api_key: str = Field(default_factory=_get_clean_groq_key)
+    groq_api_key_backup: str = Field(
+        default_factory=lambda: os.getenv("GROQ_API_KEY_backup", os.getenv("GROQ_API_KEY_BACKUP", "")).strip()
+    )
     groq_model: str = Field(
         default_factory=lambda: os.getenv("GROQ_MODEL", os.getenv("LLM_MODEL", "llama-3.1-8b-instant"))
     )
@@ -61,6 +64,14 @@ class Settings(BaseModel):
     )
     groq_timeout_s: float = Field(
         default_factory=lambda: float(os.getenv("GROQ_TIMEOUT_S", os.getenv("LLM_TIMEOUT_S", "25.0")))
+    )
+
+    # Gemini AI (Architecture Diagram Synthesis)
+    gemini_api_key: str = Field(
+        default_factory=lambda: os.getenv("GEMINI_API_KEY", "").strip()
+    )
+    gemini_model: str = Field(
+        default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
     )
 
     # Gnani AI (Voice)

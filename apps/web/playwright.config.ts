@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -15,16 +15,4 @@ export default defineConfig({
       args: ["--headless=new", "--no-sandbox", "--disable-gpu"],
     },
   },
-  projects: [
-    {
-      name: "chrome",
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: {
-          executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-          args: ["--headless=new", "--no-sandbox", "--disable-gpu"],
-        },
-      },
-    },
-  ],
 });

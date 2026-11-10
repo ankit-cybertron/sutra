@@ -1,7 +1,7 @@
 import { API_BASE } from "../lib/config";
 import { getDeviceId } from "../lib/device";
 import { ApiError, toApiError, type ApiErrorCode } from "./errors";
-import type { Api, AnswerInput, ChatInput, ChatResult, CreateSessionInput, CreateSessionResult, HealthResponse, Lang, PlanDoc } from "./types";
+import type { Api, AnswerInput, ArchitectureDiagramResult, ChatInput, ChatResult, CreateSessionInput, CreateSessionResult, HealthResponse, Lang, PlanDoc } from "./types";
 
 // Real HTTP client. Errors from the backend are RFC 7807 problem+json:
 // { type, title, status, code, detail, retryAfter?, requestId? }  (+ a Retry-After header on 429).
@@ -87,5 +87,12 @@ export const httpApi: Api = {
     } finally {
       clearTimeout(timer);
     }
+  },
+  generateArchitectureDiagram(planId: string, markdown?: string): Promise<ArchitectureDiagramResult> {
+    return request(`/api/plans/${encodeURIComponent(planId)}/architecture-diagram`, {
+      method: "POST",
+      body: { markdown },
+      timeoutMs: 45_000,
+    });
   },
 };

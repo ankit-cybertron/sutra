@@ -54,6 +54,7 @@ class GroqAdapter:
         timeout_s: Optional[float] = None,
     ):
         self.api_key = api_key if api_key is not None else settings.groq_api_key
+        self.backup_api_key = settings.groq_api_key_backup
         self.model = model or settings.groq_model
         self.fallback_model = settings.groq_fallback_model
         self.timeout_s = timeout_s or settings.groq_timeout_s
@@ -61,7 +62,9 @@ class GroqAdapter:
 
         self.total_calls = 0
         self.estimated_tokens = 0
-        self.status = "connected" if (self.api_key and not self.api_key.startswith("gsk_your_groq") and not self.api_key.startswith("mock")) else "unconfigured"
+        has_primary = bool(self.api_key and not self.api_key.startswith("gsk_your_groq") and not self.api_key.startswith("mock"))
+        has_backup = bool(self.backup_api_key and not self.backup_api_key.startswith("mock"))
+        self.status = "connected" if (has_primary or has_backup) else "unconfigured"
         self.last_error: Optional[str] = None if self.status == "connected" else "GROQ_API_KEY is not configured"
 
     def get_status(self) -> Dict[str, Any]:
@@ -78,23 +81,30 @@ class GroqAdapter:
         model_name: str,
         json_mode: bool = True,
     ) -> Dict[str, Any]:
+        active_key = self.api_key
+        active_model = model_name
+
         if (
-            not self.api_key
-            or self.api_key.startswith("gsk_your_groq")
-            or self.api_key.startswith("mock")
-            or self.api_key == "mock_key"
+            not active_key
+            or active_key.startswith("gsk_your_groq")
+            or active_key.startswith("mock")
+            or active_key == "mock_key"
         ):
-            logger.warning("GROQ_API_KEY is mock or unset. Using deterministic mock fallback.")
-            self.status = "unconfigured"
-            self.last_error = "GROQ_API_KEY is not configured or mock"
-            return {"mock": True}
+            if self.backup_api_key and not self.backup_api_key.startswith("mock"):
+                active_key = self.backup_api_key
+                active_model = "openai/gpt-oss-20b"
+            else:
+                logger.warning("GROQ_API_KEY is mock or unset. Using deterministic mock fallback.")
+                self.status = "unconfigured"
+                self.last_error = "GROQ_API_KEY is not configured or mock"
+                return {"mock": True}
 
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {active_key}",
             "Content-Type": "application/json",
         }
         payload: Dict[str, Any] = {
-            "model": model_name,
+            "model": active_model,
             "messages": messages,
             "temperature": 0.2,
         }
@@ -111,10 +121,10 @@ class GroqAdapter:
             return {"mock": True}
 
         if response.status_code == 404 and "model" in response.text.lower():
-            logger.warning(f"Groq model '{model_name}' not found (404). Trying resilient fallback models...")
-            fallbacks = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"]
+            logger.warning(f"Groq model '{active_model}' not found (404). Trying resilient fallback models...")
+            fallbacks = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "llama3-70b-8192"]
             for fb in fallbacks:
-                if fb == model_name:
+                if fb == active_model:
                     continue
                 try:
                     payload["model"] = fb
@@ -132,6 +142,32 @@ class GroqAdapter:
                         return data
                 except Exception as fb_err:
                     logger.warning(f"Groq fallback '{fb}' failed: {fb_err}")
+
+        # If primary call failed (e.g. 401/403/429) and backup key exists, attempt failover
+        if response.status_code != 200 and self.backup_api_key and self.backup_api_key != active_key:
+            logger.info("Primary Groq call failed; attempting failover to GROQ_API_KEY_backup with 'openai/gpt-oss-20b'...")
+            b_headers = {
+                "Authorization": f"Bearer {self.backup_api_key}",
+                "Content-Type": "application/json",
+            }
+            b_payload = dict(payload)
+            b_payload["model"] = "openai/gpt-oss-20b"
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                    b_res = await client.post(self.base_url, headers=b_headers, json=b_payload)
+                if b_res.status_code == 200:
+                    logger.info("Groq backup key succeeded with 'openai/gpt-oss-20b'")
+                    self.status = "connected"
+                    self.last_error = None
+                    data = b_res.json()
+                    usage = data.get("usage", {})
+                    self.total_calls += 1
+                    self.estimated_tokens += usage.get("total_tokens", 500)
+                    return data
+                else:
+                    logger.warning(f"Groq backup key returned {b_res.status_code}: {b_res.text[:120]}")
+            except Exception as b_exc:
+                logger.warning(f"Groq backup key network error: {b_exc}")
 
         if response.status_code != 200:
             logger.warning(f"Groq API error {response.status_code}: {response.text[:120]}. Falling back.")
