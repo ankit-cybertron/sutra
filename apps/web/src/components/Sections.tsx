@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { IconChat, IconHelp, IconLock, IconMic, IconTarget, IconTerminal } from "./Icons";
+import { IconChat, IconHelp, IconLock, IconMic, IconPlay, IconTarget, IconTerminal } from "./Icons";
 
 export function HowItWorks() {
   const steps = [
@@ -22,6 +22,38 @@ export function HowItWorks() {
           </li>
         ))}
       </ol>
+
+      <div className="video-demo-card">
+        <div className="video-demo-frame">
+          <img
+            src="/youtube-thumbnail.png"
+            alt="Sutra Video Walkthrough Preview"
+            className="video-demo-img"
+          />
+          <div className="video-demo-scrim" />
+          <div className="video-demo-overlay">
+            <a
+              href="https://www.youtube.com/watch?v=placeholder"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="video-play-btn"
+              aria-label="Watch Sutra walkthrough video demo on YouTube"
+            >
+              <IconPlay size={26} />
+            </a>
+            <div className="video-demo-meta">
+              <div className="video-tag-row">
+                <span className="video-badge">Walkthrough</span>
+                <span className="video-duration">03:12</span>
+              </div>
+              <h3 className="video-title">Sutra Product Demo: Voice-to-Plan in Action</h3>
+              <p className="video-desc">
+                Real-time Indic speech recognition via Gnani AI, Groq plan synthesis, and live conversational revisions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

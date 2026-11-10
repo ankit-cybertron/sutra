@@ -398,3 +398,116 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   justify-content: center;
 }
+
+/* ---------- Video Demo Section ---------- */
+.video-demo-card {
+  margin-top: 48px;
+  width: 100%;
+}
+.video-demo-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 480px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-2);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, rgba(30, 41, 59, 0.6) 0%, rgba(10, 15, 26, 0.95) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-demo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.65;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.video-demo-frame:hover .video-demo-img {
+  opacity: 0.85;
+  transform: scale(1.02);
+}
+.video-demo-scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(10, 15, 26, 0.35) 0%, rgba(10, 15, 26, 0.85) 100%);
+  pointer-events: none;
+}
+.video-demo-backdrop {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+.video-demo-overlay {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 24px;
+  max-width: 640px;
+}
+.video-play-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 20px;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+.video-play-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 32px rgba(255, 255, 255, 0.4);
+}
+.video-demo-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.video-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.video-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ink-2);
+}
+.video-duration {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+}
+.video-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+.video-desc {
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 480px;
+  line-height: 1.5;
+  margin: 0;
+}

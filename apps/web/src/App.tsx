@@ -23,6 +23,7 @@ import { Nav } from "./components/Nav";
 import { Notice, type NoticeState } from "./components/Notice";
 import { PlanCard } from "./components/PlanCard";
 import { Features, HowItWorks } from "./components/Sections";
+import { IconAlert, IconClose } from "./components/Icons";
 import { useCountdown } from "./hooks/useCountdown";
 import { useStateRef } from "./hooks/useStateRef";
 import { LIMITS } from "./lib/config";
@@ -109,7 +110,7 @@ export default function App() {
         if (h.providers) {
           setProviderStatus(h.providers);
           if (h.providers.groq?.status === "error" || h.providers.groq?.lastError) {
-            setProviderBanner(`⚠️ Groq Notice: ${h.providers.groq.lastError || "Service unreachable"}. Operating in offline fallback mode.`);
+            setProviderBanner(`Groq LLM Notice: ${h.providers.groq.lastError || "Service unreachable"}. Operating in offline fallback mode.`);
           }
         }
       })
@@ -460,7 +461,7 @@ export default function App() {
       />
       {providerBanner && (
         <div className="provider-alert-banner" role="alert">
-          <span className="alert-icon">⚠️</span>
+          <span className="alert-icon"><IconAlert size={16} /></span>
           <span className="alert-text">{providerBanner}</span>
           <button
             type="button"
@@ -468,7 +469,7 @@ export default function App() {
             onClick={() => setProviderBanner(null)}
             aria-label="Dismiss banner"
           >
-            ✕
+            <IconClose size={14} />
           </button>
         </div>
       )}

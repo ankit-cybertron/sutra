@@ -1,0 +1,108 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="dbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070a13"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="600" fill="url(#dbg)"/>
+  
+  <!-- Subtle Grid Lines -->
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="1">
+    <line x1="0" y1="0" x2="0" y2="600"/><line x1="50" y1="0" x2="50" y2="600"/><line x1="100" y1="0" x2="100" y2="600"/><line x1="150" y1="0" x2="150" y2="600"/><line x1="200" y1="0" x2="200" y2="600"/><line x1="250" y1="0" x2="250" y2="600"/><line x1="300" y1="0" x2="300" y2="600"/><line x1="350" y1="0" x2="350" y2="600"/><line x1="400" y1="0" x2="400" y2="600"/><line x1="450" y1="0" x2="450" y2="600"/><line x1="500" y1="0" x2="500" y2="600"/><line x1="550" y1="0" x2="550" y2="600"/><line x1="600" y1="0" x2="600" y2="600"/><line x1="650" y1="0" x2="650" y2="600"/><line x1="700" y1="0" x2="700" y2="600"/><line x1="750" y1="0" x2="750" y2="600"/><line x1="800" y1="0" x2="800" y2="600"/><line x1="850" y1="0" x2="850" y2="600"/><line x1="900" y1="0" x2="900" y2="600"/><line x1="950" y1="0" x2="950" y2="600"/><line x1="1000" y1="0" x2="1000" y2="600"/><line x1="1050" y1="0" x2="1050" y2="600"/><line x1="1100" y1="0" x2="1100" y2="600"/><line x1="1150" y1="0" x2="1150" y2="600"/><line x1="1200" y1="0" x2="1200" y2="600"/>
+    <line x1="0" y1="0" x2="1200" y2="0"/><line x1="0" y1="50" x2="1200" y2="50"/><line x1="0" y1="100" x2="1200" y2="100"/><line x1="0" y1="150" x2="1200" y2="150"/><line x1="0" y1="200" x2="1200" y2="200"/><line x1="0" y1="250" x2="1200" y2="250"/><line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="350" x2="1200" y2="350"/><line x1="0" y1="400" x2="1200" y2="400"/><line x1="0" y1="450" x2="1200" y2="450"/><line x1="0" y1="500" x2="1200" y2="500"/><line x1="0" y1="550" x2="1200" y2="550"/><line x1="0" y1="600" x2="1200" y2="600"/>
+  </g>
+
+  <!-- Title Header -->
+  <text x="50" y="55" font-size="24" font-weight="700" fill="#f8fafc" letter-spacing="0.5">Sutra · CI/CD &amp; Multi-Cloud Deployment</text>
+  <text x="50" y="80" font-size="13" font-weight="400" fill="#94a3b8">Docker-Free AWS Elastic Beanstalk (Python 3.11), CloudFront CDN, and Dual-Cloud Render Deployment</text>
+
+  <!-- STEP 1: GITHUB -->
+  <rect x="50" y="120" width="220" height="420" rx="12" fill="url(#cardBg)" stroke="#334155" stroke-width="1.5"/>
+  <rect x="50" y="120" width="220" height="40" rx="12" fill="#1e293b"/>
+  <text x="70" y="145" font-size="14" font-weight="600" fill="#f8fafc">1. SOURCE REPO</text>
+  <text x="70" y="185" font-size="13" font-weight="600" fill="#38bdf8">GitHub Repository</text>
+  <text x="70" y="205" font-size="11" fill="#94a3b8">ankit-cybertron/sutra</text>
+  <text x="70" y="235" font-size="12" fill="#e2e8f0">• Push to main</text>
+  <text x="70" y="255" font-size="12" fill="#e2e8f0">• Pull requests</text>
+  <text x="70" y="275" font-size="12" fill="#e2e8f0">• workflow_dispatch</text>
+  
+  <rect x="68" y="320" width="184" height="190" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="80" y="345" font-size="12" font-weight="600" fill="#94a3b8">Artifact Structure:</text>
+  <text x="80" y="370" font-size="11" fill="#cbd5e1">├── Procfile</text>
+  <text x="80" y="390" font-size="11" fill="#cbd5e1">├── requirements.txt</text>
+  <text x="80" y="410" font-size="11" fill="#cbd5e1">├── application.py</text>
+  <text x="80" y="430" font-size="11" fill="#cbd5e1">├── .ebextensions/</text>
+  <text x="80" y="450" font-size="11" fill="#cbd5e1">└── apps/</text>
+
+  <!-- STEP 2: GITHUB ACTIONS -->
+  <rect x="310" y="120" width="250" height="420" rx="12" fill="url(#cardBg)" stroke="#334155" stroke-width="1.5"/>
+  <rect x="310" y="120" width="250" height="40" rx="12" fill="#1e293b"/>
+  <text x="330" y="145" font-size="14" font-weight="600" fill="#a855f7">2. GITHUB ACTIONS</text>
+
+  <rect x="328" y="180" width="214" height="150" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="340" y="205" font-size="12" font-weight="600" fill="#c084fc">Pipeline (.github/workflows)</text>
+  <text x="340" y="230" font-size="11" fill="#94a3b8">1. Setup Python 3.11</text>
+  <text x="340" y="250" font-size="11" fill="#94a3b8">2. Install dependencies</text>
+  <text x="340" y="270" font-size="11" fill="#94a3b8">3. Run Pytest test suite</text>
+  <text x="340" y="290" font-size="11" fill="#94a3b8">4. Build zip artifact</text>
+  <text x="340" y="310" font-size="11" fill="#4ade80">5. AWS OIDC Auth (Keyless)</text>
+
+  <rect x="328" y="345" width="214" height="165" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="340" y="370" font-size="12" font-weight="600" fill="#38bdf8">Zero-Docker Guarantee:</text>
+  <text x="340" y="395" font-size="11" fill="#94a3b8">• No Docker daemon build</text>
+  <text x="340" y="415" font-size="11" fill="#94a3b8">• No ECR registry push</text>
+  <text x="340" y="435" font-size="11" fill="#94a3b8">• Native zip deployment</text>
+  <text x="340" y="455" font-size="11" fill="#94a3b8">• Fast &lt; 90s build time</text>
+  <text x="340" y="475" font-size="11" fill="#4ade80">• OIDC Role: ap-south-1</text>
+
+  <!-- STEP 3: AWS PRODUCTION CLOUD -->
+  <rect x="600" y="120" width="310" height="420" rx="12" fill="url(#cardBg)" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="600" y="120" width="310" height="40" rx="12" fill="#1e293b"/>
+  <text x="620" y="145" font-size="14" font-weight="600" fill="#fbbf24">3. AWS CLOUD (ap-south-1)</text>
+
+  <!-- Elastic Beanstalk Box -->
+  <rect x="620" y="180" width="270" height="150" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="635" y="205" font-size="13" font-weight="600" fill="#f8fafc">AWS Elastic Beanstalk</text>
+  <text x="635" y="225" font-size="11" fill="#fbbf24">App: sutra · Env: sutra-pod</text>
+  <text x="635" y="245" font-size="11" fill="#94a3b8">• Platform: Python 3.11 on AL2023</text>
+  <text x="635" y="265" font-size="11" fill="#94a3b8">• Gunicorn + UvicornWorker</text>
+  <text x="635" y="285" font-size="11" fill="#94a3b8">• Proxy: Nginx on EC2</text>
+  <text x="635" y="305" font-size="11" fill="#4ade80">• Health Check: /api/health</text>
+
+  <!-- CloudFront & Edge -->
+  <rect x="620" y="345" width="270" height="165" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="635" y="370" font-size="13" font-weight="600" fill="#38bdf8">CloudFront &amp; Edge CDN</text>
+  <text x="635" y="390" font-size="11" fill="#38bdf8">d3dv21umcveu3t.cloudfront.net</text>
+  <text x="635" y="415" font-size="11" fill="#94a3b8">• Global SSL edge caching</text>
+  <text x="635" y="435" font-size="11" fill="#94a3b8">• ACM automated certificate</text>
+  <text x="635" y="455" font-size="11" fill="#94a3b8">• Application Load Balancer (ALB)</text>
+  <text x="635" y="475" font-size="11" fill="#94a3b8">• Forwarded proto / IP preservation</text>
+
+  <!-- STEP 4: MULTI-CLOUD (RENDER) -->
+  <rect x="940" y="120" width="210" height="420" rx="12" fill="url(#cardBg)" stroke="#334155" stroke-width="1.5"/>
+  <rect x="940" y="120" width="210" height="40" rx="12" fill="#1e293b"/>
+  <text x="960" y="145" font-size="14" font-weight="600" fill="#22c55e">4. MULTI-CLOUD</text>
+
+  <rect x="958" y="180" width="174" height="330" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="970" y="205" font-size="13" font-weight="600" fill="#4ade80">Render PaaS Cloud</text>
+  <text x="970" y="225" font-size="11" fill="#38bdf8">sutra-x3ws.onrender.com</text>
+  
+  <text x="970" y="260" font-size="11" fill="#94a3b8">• Direct git webhook push</text>
+  <text x="970" y="280" font-size="11" fill="#94a3b8">• Zero-downtime rollouts</text>
+  <text x="970" y="300" font-size="11" fill="#94a3b8">• WebSocket sticky session</text>
+  <text x="970" y="320" font-size="11" fill="#94a3b8">• Automated Let's Encrypt</text>
+  <text x="970" y="340" font-size="11" fill="#94a3b8">• Multi-region redundancy</text>
+  <text x="970" y="375" font-size="11" fill="#4ade80">Active Fallback &amp; Live Mirror</text>
+
+  <!-- CONNECTIONS -->
+  <path d="M270 240 L310 240" stroke="#38bdf8" stroke-width="2" fill="none"/>
+  <path d="M560 240 L600 240" stroke="#f59e0b" stroke-width="2" fill="none"/>
+  <path d="M270 290 L940 290" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4,4" fill="none"/>
+</svg>

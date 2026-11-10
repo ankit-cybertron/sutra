@@ -109,7 +109,7 @@ export function ClarifyPanel(p: Props) {
           </div>
           <div className="clarify-plan-now-wrap">
             <button type="button" className="btn btn-sub-action" onClick={p.onPlanNow} disabled={p.busy || p.rateLimited}>
-              ⚡ {t(p.lang, "planNow")}
+              {t(p.lang, "planNow")}
             </button>
           </div>
         </div>

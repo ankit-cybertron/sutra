@@ -1,0 +1,75 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="ytBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050811"/>
+      <stop offset="50%" stop-color="#0a0f1d"/>
+      <stop offset="100%" stop-color="#020408"/>
+    </linearGradient>
+    <radialGradient id="glowCenter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="redAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="720" fill="url(#ytBg)"/>
+  <circle cx="640" cy="360" r="450" fill="url(#glowCenter)"/>
+
+  <!-- Subtle Blueprint Grid -->
+  <g stroke="#ffffff" stroke-opacity="0.05" stroke-width="1.5">
+    <line x1="0" y1="0" x2="0" y2="720"/><line x1="50" y1="0" x2="50" y2="720"/><line x1="100" y1="0" x2="100" y2="720"/><line x1="150" y1="0" x2="150" y2="720"/><line x1="200" y1="0" x2="200" y2="720"/><line x1="250" y1="0" x2="250" y2="720"/><line x1="300" y1="0" x2="300" y2="720"/><line x1="350" y1="0" x2="350" y2="720"/><line x1="400" y1="0" x2="400" y2="720"/><line x1="450" y1="0" x2="450" y2="720"/><line x1="500" y1="0" x2="500" y2="720"/><line x1="550" y1="0" x2="550" y2="720"/><line x1="600" y1="0" x2="600" y2="720"/><line x1="650" y1="0" x2="650" y2="720"/><line x1="700" y1="0" x2="700" y2="720"/><line x1="750" y1="0" x2="750" y2="720"/><line x1="800" y1="0" x2="800" y2="720"/><line x1="850" y1="0" x2="850" y2="720"/><line x1="900" y1="0" x2="900" y2="720"/><line x1="950" y1="0" x2="950" y2="720"/><line x1="1000" y1="0" x2="1000" y2="720"/><line x1="1050" y1="0" x2="1050" y2="720"/><line x1="1100" y1="0" x2="1100" y2="720"/><line x1="1150" y1="0" x2="1150" y2="720"/><line x1="1200" y1="0" x2="1200" y2="720"/><line x1="1250" y1="0" x2="1250" y2="720"/>
+    <line x1="0" y1="0" x2="1280" y2="0"/><line x1="0" y1="50" x2="1280" y2="50"/><line x1="0" y1="100" x2="1280" y2="100"/><line x1="0" y1="150" x2="1280" y2="150"/><line x1="0" y1="200" x2="1280" y2="200"/><line x1="0" y1="250" x2="1280" y2="250"/><line x1="0" y1="300" x2="1280" y2="300"/><line x1="0" y1="350" x2="1280" y2="350"/><line x1="0" y1="400" x2="1280" y2="400"/><line x1="0" y1="450" x2="1280" y2="450"/><line x1="0" y1="500" x2="1280" y2="500"/><line x1="0" y1="550" x2="1280" y2="550"/><line x1="0" y1="600" x2="1280" y2="600"/><line x1="0" y1="650" x2="1280" y2="650"/><line x1="0" y1="700" x2="1280" y2="700"/>
+  </g>
+
+  <!-- Top Badges -->
+  <g transform="translate(80, 80)">
+    <rect x="0" y="0" width="160" height="36" rx="6" fill="#1e293b" stroke="#334155"/>
+    <text x="20" y="23" font-size="13" font-weight="700" fill="#38bdf8" letter-spacing="1">PRODUCT DEMO</text>
+
+    <rect x="180" y="0" width="220" height="36" rx="6" fill="#1e293b" stroke="#334155"/>
+    <text x="200" y="23" font-size="13" font-weight="600" fill="#94a3b8">GNANI AI · GROQ LLM</text>
+
+    <rect x="420" y="0" width="190" height="36" rx="6" fill="url(#redAccent)"/>
+    <text x="440" y="23" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.5">FULL 4K WALKTHROUGH</text>
+  </g>
+
+  <!-- Giant Title -->
+  <text x="80" y="220" font-size="76" font-weight="900" fill="#ffffff" letter-spacing="-1">SUTRA</text>
+  <text x="80" y="280" font-size="34" font-weight="700" fill="#38bdf8">Say the idea. Skip the rambling.</text>
+  
+  <text x="80" y="340" font-size="20" font-weight="400" fill="#94a3b8" max-width="600">
+    Voice-first architecture scoper for builders who brainstorm out loud in Hindi, Hinglish, &amp; English.
+  </text>
+
+  <!-- Feature Pills -->
+  <g transform="translate(80, 390)">
+    <rect x="0" y="0" width="290" height="50" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="24" y="31" font-size="15" font-weight="600" fill="#f8fafc">🎙️ Gnani AI Prisma Realtime STT</text>
+
+    <rect x="310" y="0" width="280" height="50" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="334" y="31" font-size="15" font-weight="600" fill="#f8fafc">🔊 Gnani AI Timbre v2.5 TTS</text>
+
+    <rect x="610" y="0" width="280" height="50" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="634" y="31" font-size="15" font-weight="600" fill="#f8fafc">⚡ Groq LPU Schema Synthesis</text>
+  </g>
+
+  <!-- Giant Center Play Button -->
+  <g transform="translate(980, 360)">
+    <circle cx="0" cy="0" r="75" fill="#ffffff" filter="drop-shadow(0 0 30px rgba(59,130,246,0.6))"/>
+    <polygon points="-18,-30 32,0 -18,30" fill="#090d16"/>
+  </g>
+
+  <!-- Bottom Timeline / Meta -->
+  <g transform="translate(80, 600)">
+    <rect x="0" y="0" width="1120" height="60" rx="10" fill="#0b1120" stroke="#1e293b"/>
+    <text x="30" y="36" font-size="15" font-weight="600" fill="#cbd5e1">00:00 Hinglish Voice Intake</text>
+    <text x="280" y="36" font-size="15" font-weight="600" fill="#cbd5e1">01:05 Realtime STT Stream</text>
+    <text x="540" y="36" font-size="15" font-weight="600" fill="#cbd5e1">02:10 Scoped Blueprint</text>
+    <text x="780" y="36" font-size="15" font-weight="600" fill="#cbd5e1">02:50 Live Voice Refinements</text>
+    <text x="1030" y="36" font-size="15" font-weight="700" fill="#38bdf8">03:12</text>
+  </g>
+</svg>

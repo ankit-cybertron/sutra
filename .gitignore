@@ -46,8 +46,12 @@ apps/web/test-results/
 
 # Data & Runtime
 data/
+*.db
+*.sqlite3
 .tmp/
 *.log
+*.mp3
+*.wav
 
 # OS
 .DS_Store

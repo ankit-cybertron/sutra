@@ -107,3 +107,16 @@ export const IconClose = (p: IconProps) => (
     <path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
+
+export const IconAlert = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <path d="M12 9v4M12 17h.01" />
+  </Svg>
+);
+
+export const IconPlay = (p: IconProps) => (
+  <Svg {...p}>
+    <polygon points="6 4 20 12 6 20 6 4" fill="currentColor" />
+  </Svg>
+);
