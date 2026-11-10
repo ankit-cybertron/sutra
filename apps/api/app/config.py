@@ -6,9 +6,22 @@ from typing import List
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-# Load .env file from project root
+# Load .env file from project root with override
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
-load_dotenv(ROOT_DIR / ".env")
+env_path = ROOT_DIR / ".env"
+if env_path.exists():
+    load_dotenv(env_path, override=True)
+
+
+def _get_clean_groq_key() -> str:
+    raw = os.getenv("GROQ_API_KEY", "").strip()
+    if not raw:
+        return ""
+    # If accidental concatenated keys exist, take the first one
+    parts = raw.split("gsk_")
+    if len(parts) > 2:
+        return "gsk_" + parts[1]
+    return raw
 
 
 class BrandConfig(BaseModel):
@@ -39,12 +52,12 @@ class Settings(BaseModel):
     )
 
     # Groq LLM
-    groq_api_key: str = Field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
+    groq_api_key: str = Field(default_factory=_get_clean_groq_key)
     groq_model: str = Field(
-        default_factory=lambda: os.getenv("GROQ_MODEL", os.getenv("LLM_MODEL", "llama-3.1-8b-instant"))
+        default_factory=lambda: os.getenv("GROQ_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-20b"))
     )
     groq_fallback_model: str = Field(
-        default_factory=lambda: os.getenv("GROQ_FALLBACK_MODEL", "llama-3.1-8b-instant")
+        default_factory=lambda: os.getenv("GROQ_FALLBACK_MODEL", "qwen/qwen3.8-27b")
     )
     groq_timeout_s: float = Field(
         default_factory=lambda: float(os.getenv("GROQ_TIMEOUT_S", os.getenv("LLM_TIMEOUT_S", "25.0")))

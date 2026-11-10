@@ -1,7 +1,7 @@
 import { API_BASE } from "../lib/config";
 import { getDeviceId } from "../lib/device";
 import { ApiError, toApiError, type ApiErrorCode } from "./errors";
-import type { Api, AnswerInput, ChatInput, ChatResult, CreateSessionInput, CreateSessionResult, Lang, PlanDoc } from "./types";
+import type { Api, AnswerInput, ChatInput, ChatResult, CreateSessionInput, CreateSessionResult, HealthResponse, Lang, PlanDoc } from "./types";
 
 // Real HTTP client. Errors from the backend are RFC 7807 problem+json:
 // { type, title, status, code, detail, retryAfter?, requestId? }  (+ a Retry-After header on 429).
@@ -66,6 +66,9 @@ export const httpApi: Api = {
   },
   getPlan(planId: string): Promise<PlanDoc> {
     return request(`/api/plans/${encodeURIComponent(planId)}`);
+  },
+  health(): Promise<HealthResponse> {
+    return request("/api/health");
   },
   async tts(text: string, lang: Lang): Promise<Blob> {
     const ctrl = new AbortController();

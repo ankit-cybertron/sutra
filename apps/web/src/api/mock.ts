@@ -6,6 +6,7 @@ import type {
   ChatResult,
   CreateSessionInput,
   CreateSessionResult,
+  HealthResponse,
   Lang,
   Plan,
   PlanDoc,
@@ -261,5 +262,17 @@ export const mockApi: Api = {
   async tts(): Promise<Blob> {
     // The mock voice path uses the browser's speechSynthesis instead (see useSpeaker).
     throw new ApiError(503, "VOICE_UNAVAILABLE", "No TTS in mock mode.");
+  },
+
+  async health(): Promise<HealthResponse> {
+    return {
+      ok: true,
+      status: "ok",
+      app: "Sutra",
+      providers: {
+        groq: { status: "mock", model: "mock", lastError: null },
+        gnani: { status: "mock", mode: "mock", lastError: null },
+      },
+    };
   },
 };

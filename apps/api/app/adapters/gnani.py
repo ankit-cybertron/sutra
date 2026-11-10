@@ -38,6 +38,18 @@ class GnaniAdapter:
         self.tts_chars = 0
         self.tts_cache_hits = 0
 
+        self.status = "connected" if not self.is_mock else "mock"
+        self.last_error: Optional[str] = None
+
+    def get_status(self) -> Dict[str, Any]:
+        return {
+            "status": self.status,
+            "mode": self.mode,
+            "last_error": self.last_error,
+            "tts_calls": self.tts_calls,
+            "stt_calls": self.stt_calls,
+        }
+
     @property
     def is_mock(self) -> bool:
         return self.mode == "mock" or not self.api_key or self.api_key.startswith("your_gnani")
@@ -106,6 +118,8 @@ class GnaniAdapter:
                 response = await client.post(url, headers=headers, json=payload)
             except Exception as exc:
                 logger.warning(f"Gnani TTS request failed ({exc}). Falling back to mock audio.")
+                self.status = "error"
+                self.last_error = f"Gnani TTS network error: {exc}"
                 mock_audio = self._generate_mock_wav()
                 try:
                     cache_file.write_bytes(mock_audio)
@@ -115,6 +129,8 @@ class GnaniAdapter:
 
             if response.status_code != 200:
                 logger.warning(f"Gnani TTS returned {response.status_code}. Falling back to mock audio.")
+                self.status = "error"
+                self.last_error = f"Gnani TTS HTTP {response.status_code}: {response.text[:100]}"
                 mock_audio = self._generate_mock_wav()
                 try:
                     cache_file.write_bytes(mock_audio)
@@ -123,6 +139,8 @@ class GnaniAdapter:
                 return mock_audio, "audio/wav"
 
             audio_data = response.content
+            self.status = "connected"
+            self.last_error = None
             self.tts_calls += 1
             self.tts_chars += len(text)
 

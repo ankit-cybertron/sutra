@@ -16,7 +16,7 @@ interface Props {
   voiceStatus: VoiceStatus;
   voiceLevel: number;
   onIdea: (v: string) => void;
-  onSubmit: () => void;
+  onSubmit: (direct?: boolean) => void;
   onOrb: () => void;
   gate: ReactNode;
   notice: ReactNode;
@@ -52,7 +52,7 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
             maxLength={LIMITS.idea * 2}
             spellCheck={false}
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !disabled) onSubmit();
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !disabled) onSubmit(true);
             }}
           />
           <div className="idea-foot">
@@ -72,10 +72,15 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
         {notice}
         {gate}
 
-        <button type="button" className="btn btn-cta" disabled={disabled} onClick={onSubmit}>
-          {busy ? t(lang, "ctaBusy") : t(lang, "cta")}
-          {!busy && <IconArrow size={18} />}
-        </button>
+        <div className="hero-actions">
+          <button type="button" className="btn btn-cta" disabled={disabled} onClick={() => onSubmit(true)}>
+            {busy ? t(lang, "ctaBusyDirect") : t(lang, "ctaDirect")}
+            {!busy && <IconArrow size={18} />}
+          </button>
+          <button type="button" className="btn btn-light btn-sub-action" disabled={disabled} onClick={() => onSubmit(false)}>
+            {busy ? t(lang, "ctaBusy") : t(lang, "ctaClarify")}
+          </button>
+        </div>
 
         <ul className="trust">
           {(["trust1", "trust2", "trust3", "trust4"] as const).map((k) => (

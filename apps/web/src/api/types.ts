@@ -57,6 +57,7 @@ export interface PlanDoc {
   version: number;
   plan: Plan;
   changeSummary: string[];
+  providerNotice?: string;
 }
 
 export interface ChatMessage {
@@ -77,6 +78,7 @@ export interface CreateSessionResult {
   detectedLang: Lang;
   /** 0 to 2 questions. */
   questions: Question[];
+  providerNotice?: string;
 }
 
 export interface AnswerInput {
@@ -96,6 +98,26 @@ export interface ChatResult {
   /** Present only when the plan changed. */
   plan?: PlanDoc;
   changeSummary: string[];
+  providerNotice?: string;
+}
+
+export interface ProviderStatus {
+  status: "connected" | "mock" | "error" | "unconfigured";
+  model?: string;
+  mode?: string;
+  lastError?: string | null;
+  calls?: number;
+}
+
+export interface HealthResponse {
+  ok: boolean;
+  status: string;
+  app: string;
+  providers?: {
+    groq?: ProviderStatus;
+    gnani?: ProviderStatus;
+  };
+  groqModel?: string;
 }
 
 export interface Api {
@@ -104,4 +126,5 @@ export interface Api {
   chat(planId: string, input: ChatInput): Promise<ChatResult>;
   getPlan(planId: string): Promise<PlanDoc>;
   tts(text: string, lang: Lang): Promise<Blob>;
+  health(): Promise<HealthResponse>;
 }

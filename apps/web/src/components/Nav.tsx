@@ -10,10 +10,23 @@ interface Props {
   inWorkspace: boolean;
   onNewIdea: () => void;
   onStartSpeaking: () => void;
+  groqStatus?: { status: string; model?: string; lastError?: string | null };
+  gnaniStatus?: { status: string; mode?: string; lastError?: string | null };
 }
 
-export function Nav({ lang, onLang, inWorkspace, onNewIdea, onStartSpeaking }: Props) {
+export function Nav({ lang, onLang, inWorkspace, onNewIdea, onStartSpeaking, groqStatus, gnaniStatus }: Props) {
   const [open, setOpen] = useState(false);
+
+  const isGroqOk = groqStatus?.status === "connected";
+  const isGroqErr = groqStatus?.status === "error";
+  const groqTitle = groqStatus?.lastError
+    ? `Groq LLM: ${groqStatus.lastError}`
+    : `Groq LLM: ${isGroqOk ? `Connected (${groqStatus?.model || "active"})` : "Offline / Fallback"}`;
+
+  const isGnaniOk = gnaniStatus?.status === "connected";
+  const gnaniTitle = gnaniStatus?.lastError
+    ? `Gnani Voice: ${gnaniStatus.lastError}`
+    : `Gnani Voice: ${isGnaniOk ? `Ready (${gnaniStatus?.mode || "live"})` : "Offline / WebSpeech Fallback"}`;
 
   const links = inWorkspace ? null : (
     <>
@@ -31,6 +44,23 @@ export function Nav({ lang, onLang, inWorkspace, onNewIdea, onStartSpeaking }: P
           {links}
         </nav>
         <div className="nav-right">
+          <div className="provider-badges" aria-label="AI Provider status">
+            <span
+              className={`provider-pill ${isGroqOk ? "pill-ok" : isGroqErr ? "pill-err" : "pill-warn"}`}
+              title={groqTitle}
+            >
+              <span className="pill-dot" />
+              <span className="pill-text">Groq: {isGroqOk ? "Live" : isGroqErr ? "Error" : "Fallback"}</span>
+            </span>
+            <span
+              className={`provider-pill ${isGnaniOk ? "pill-ok" : "pill-warn"}`}
+              title={gnaniTitle}
+            >
+              <span className="pill-dot" />
+              <span className="pill-text">Gnani: {isGnaniOk ? "Ready" : "Fallback"}</span>
+            </span>
+          </div>
+
           <div className="seg" role="group" aria-label="Language">
             {LANG_ORDER.map((l) => (
               <button

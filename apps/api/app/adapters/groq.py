@@ -34,7 +34,7 @@ class ChatLLMOutput(BaseModel):
 
 class ClarifyLLMOutput(BaseModel):
     detected_lang: Lang = "en"
-    idea_summary: str
+    idea_summary: str = ""
     questions: List[Question] = Field(default_factory=list)
 
 
@@ -45,7 +45,7 @@ class GroqAdapter:
         model: Optional[str] = None,
         timeout_s: Optional[float] = None,
     ):
-        self.api_key = api_key or settings.groq_api_key
+        self.api_key = api_key if api_key is not None else settings.groq_api_key
         self.model = model or settings.groq_model
         self.fallback_model = settings.groq_fallback_model
         self.timeout_s = timeout_s or settings.groq_timeout_s
@@ -53,6 +53,16 @@ class GroqAdapter:
 
         self.total_calls = 0
         self.estimated_tokens = 0
+        self.status = "connected" if (self.api_key and not self.api_key.startswith("gsk_your_groq") and not self.api_key.startswith("mock")) else "unconfigured"
+        self.last_error: Optional[str] = None if self.status == "connected" else "GROQ_API_KEY is not configured"
+
+    def get_status(self) -> Dict[str, Any]:
+        return {
+            "status": self.status,
+            "model": self.model,
+            "last_error": self.last_error,
+            "calls": self.total_calls,
+        }
 
     async def _call_groq_raw(
         self,
@@ -68,6 +78,8 @@ class GroqAdapter:
             or getattr(self, "_disabled", False)
         ):
             logger.warning("GROQ_API_KEY is mock, disabled, or unset. Using deterministic mock fallback.")
+            self.status = "unconfigured"
+            self.last_error = "GROQ_API_KEY is not configured or mock"
             return {"mock": True}
 
         headers = {
@@ -87,11 +99,13 @@ class GroqAdapter:
                 response = await client.post(self.base_url, headers=headers, json=payload)
         except (httpx.ConnectError, httpx.TimeoutException) as exc:
             logger.warning(f"Groq network error ({exc}). Falling back to mock response.")
+            self.status = "error"
+            self.last_error = f"Groq network error: {exc}"
             return {"mock": True}
 
         if response.status_code == 404 and "model" in response.text.lower():
             logger.warning(f"Groq model '{model_name}' not found (404). Trying resilient fallback models...")
-            fallbacks = ["llama-3.1-8b-instant", "llama-3.1-70b-versatile", "llama3-8b-8192", "llama3-70b-8192", "mixtral-8x7b-32768"]
+            fallbacks = ["openai/gpt-oss-20b", "qwen/qwen3.8-27b", "llama-3.1-8b-instant", "llama-3.1-70b-versatile", "llama3-8b-8192", "mixtral-8x7b-32768"]
             for fb in fallbacks:
                 if fb == model_name:
                     continue
@@ -102,6 +116,8 @@ class GroqAdapter:
                     if fb_res.status_code == 200:
                         logger.info(f"Groq model successfully switched to '{fb}'")
                         self.model = fb
+                        self.status = "connected"
+                        self.last_error = None
                         data = fb_res.json()
                         usage = data.get("usage", {})
                         self.total_calls += 1
@@ -112,11 +128,15 @@ class GroqAdapter:
 
         if response.status_code != 200:
             logger.warning(f"Groq API error {response.status_code}: {response.text[:120]}. Falling back.")
+            self.status = "error"
+            self.last_error = f"Groq HTTP {response.status_code}: {response.text[:120]}"
             if response.status_code in (401, 403):
                 self._disabled = True
             return {"mock": True}
 
         data = response.json()
+        self.status = "connected"
+        self.last_error = None
         usage = data.get("usage", {})
         self.total_calls += 1
         self.estimated_tokens += usage.get("total_tokens", 500)

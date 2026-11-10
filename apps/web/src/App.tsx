@@ -9,6 +9,7 @@ import {
   type Lang,
   type LangMode,
   type PlanDoc,
+  type ProviderStatus,
   type Question,
 } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
@@ -95,7 +96,25 @@ export default function App() {
   const speakRepliesRef = useRef(true);
   speakRepliesRef.current = speakReplies;
   const [textOnly, setTextOnly] = useState(() => lsGet(TEXT_ONLY_KEY) === "1");
+  const [providerStatus, setProviderStatus] = useState<{
+    groq?: ProviderStatus;
+    gnani?: ProviderStatus;
+  } | null>(null);
+  const [providerBanner, setProviderBanner] = useState<string | null>(null);
   const lastSubmit = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    api.health()
+      .then((h) => {
+        if (h.providers) {
+          setProviderStatus(h.providers);
+          if (h.providers.groq?.status === "error" || h.providers.groq?.lastError) {
+            setProviderBanner(`⚠️ Groq Notice: ${h.providers.groq.lastError || "Service unreachable"}. Operating in offline fallback mode.`);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const langMode: LangMode = langLocked ? lang : "auto";
   const rateLeft = useCountdown(notice?.kind === "rate" ? (notice.until ?? null) : null);
@@ -203,6 +222,7 @@ export default function App() {
     setNotice(null);
     try {
       const d = await api.generatePlan(sid, answers);
+      if (d.providerNotice) setProviderBanner(d.providerNotice);
       setDoc(d);
       const hello = t(l, "chatHello");
       setMessages([{ id: uid(), role: "ai", text: hello, source: "text", ts: Date.now() }]);
@@ -229,6 +249,7 @@ export default function App() {
     setPartial("");
     try {
       const res = await api.createSession({ idea: text, lang: langLockedRef.current ? langRef.current : "auto", source: ideaSourceRef.current });
+      if (res.providerNotice) setProviderBanner(res.providerNotice);
       if (!langLockedRef.current) setLangState(res.detectedLang);
       const l = pickLang(res.detectedLang);
       setSessionId(res.sessionId);
@@ -302,6 +323,7 @@ export default function App() {
     const l = langRef.current;
     try {
       const r = await api.chat(doc.id, { message: text, source, lang: l });
+      if (r.providerNotice) setProviderBanner(r.providerNotice);
       setMessages((m) => {
         const next: ChatMessage[] = [...m, { id: uid(), role: "ai", text: r.reply, source: "text", ts: Date.now() }];
         if (r.plan) next.push({ id: uid(), role: "system", text: t(l, "planUpdated", { n: r.plan.version }), source: "text", ts: Date.now() });
@@ -427,7 +449,29 @@ export default function App() {
       <a className="skip" href="#main">
         {t(lang, "skipToContent")}
       </a>
-      <Nav lang={lang} onLang={setLang} inWorkspace={stage !== "idle"} onNewIdea={newIdea} onStartSpeaking={startSpeaking} />
+      <Nav
+        lang={lang}
+        onLang={setLang}
+        inWorkspace={stage !== "idle"}
+        onNewIdea={newIdea}
+        onStartSpeaking={startSpeaking}
+        groqStatus={providerStatus?.groq}
+        gnaniStatus={providerStatus?.gnani}
+      />
+      {providerBanner && (
+        <div className="provider-alert-banner" role="alert">
+          <span className="alert-icon">⚠️</span>
+          <span className="alert-text">{providerBanner}</span>
+          <button
+            type="button"
+            className="alert-close"
+            onClick={() => setProviderBanner(null)}
+            aria-label="Dismiss banner"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {wake}
       <main id="main">
         {stage === "idle" && (
@@ -444,7 +488,7 @@ export default function App() {
                 ideaSourceRef.current = "text";
                 setIdea(v);
               }}
-              onSubmit={() => void submitIdea()}
+              onSubmit={(direct?: boolean) => void submitIdea(direct ?? true)}
               onOrb={onOrb}
               gate={gateEl}
               notice={noticeEl}

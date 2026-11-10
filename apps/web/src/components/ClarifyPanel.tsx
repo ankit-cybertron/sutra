@@ -57,12 +57,15 @@ export function ClarifyPanel(p: Props) {
           </h2>
 
           {q.options.length > 0 && (
-            <div className="chips" role="group" aria-label="Quick answers">
-              {q.options.map((o) => (
-                <button key={o} type="button" className="chip" onClick={() => p.onDraft(o)}>
-                  {o}
-                </button>
-              ))}
+            <div className="chips-wrap">
+              <span className="chips-subtle-hint">Quick suggestions (or type / speak freely below):</span>
+              <div className="chips" role="group" aria-label="Quick answers">
+                {q.options.map((o) => (
+                  <button key={o} type="button" className="chip" onClick={() => p.onDraft(o)}>
+                    {o}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -104,11 +107,11 @@ export function ClarifyPanel(p: Props) {
               {last ? t(p.lang, "makePlan") : t(p.lang, "next")} <IconArrow size={16} />
             </button>
           </div>
-          {!last && (
-            <button type="button" className="link-btn" onClick={p.onPlanNow} disabled={p.busy || p.rateLimited}>
-              {t(p.lang, "planNow")}
+          <div className="clarify-plan-now-wrap">
+            <button type="button" className="btn btn-sub-action" onClick={p.onPlanNow} disabled={p.busy || p.rateLimited}>
+              ⚡ {t(p.lang, "planNow")}
             </button>
-          )}
+          </div>
         </div>
       </div>
     </section>
