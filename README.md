@@ -1,8 +1,13 @@
-# Sutra · सूत्र
+<div align="center">
+  <img src="docs/assets/logo.png" alt="Sutra Logo" width="360" />
 
-> **Say the idea. Skip the rambling.**  
-> A voice-first product architecture engine built for builders who brainstorm out loud in **Hindi, Hinglish, and English**.  
-> Powered by **Gnani AI** (Prisma Real-Time STT + Timbre Neural TTS) and **Groq** (High-Throughput Inference).
+  <br />
+  <br />
+
+  <p><strong>Say the idea. Skip the rambling.</strong><br />
+  A voice-first product architecture engine built for builders who brainstorm out loud in <strong>Hindi, Hinglish, and English</strong>.<br />
+  Powered by <strong>Gnani AI</strong> (Prisma Real-Time STT + Timbre Neural TTS) and <strong>Groq</strong> (High-Throughput Inference).</p>
+</div>
 
 [![Live CloudFront Demo](https://img.shields.io/badge/AWS%20CloudFront-Live%20Demo-blue?style=for-the-badge&logo=amazon-aws)](https://d3dv21umcveu3t.cloudfront.net/#p=pln_e6185ff862)
 [![Live Render Mirror](https://img.shields.io/badge/Render-Active%20Deployment-46E3B7?style=for-the-badge&logo=render)](https://sutra-x3ws.onrender.com/#top)
