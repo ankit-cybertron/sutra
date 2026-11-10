@@ -65,8 +65,9 @@ class GroqAdapter:
             or self.api_key.startswith("gsk_your_groq")
             or self.api_key.startswith("mock")
             or self.api_key == "mock_key"
+            or getattr(self, "_disabled", False)
         ):
-            logger.warning("GROQ_API_KEY is mock or unset. Using deterministic mock fallback.")
+            logger.warning("GROQ_API_KEY is mock, disabled, or unset. Using deterministic mock fallback.")
             return {"mock": True}
 
         headers = {
@@ -89,14 +90,10 @@ class GroqAdapter:
             return {"mock": True}
 
         if response.status_code != 200:
-            logger.error(f"Groq API error {response.status_code}: {response.text}")
-            raise ApiProblemError(
-                status_code=502,
-                code="PROVIDER_UNAVAILABLE",
-                title="LLM Service Error",
-                detail=f"Groq API returned error: {response.status_code}",
-                extra={"error_body": response.text[:200]},
-            )
+            logger.warning(f"Groq API error {response.status_code}: {response.text[:120]}. Falling back.")
+            if response.status_code in (400, 401, 403):
+                self._disabled = True
+            return {"mock": True}
 
         data = response.json()
         usage = data.get("usage", {})
@@ -325,7 +322,10 @@ class GroqAdapter:
     ) -> Tuple[str, str, Optional[Plan], List[str]]:
         msg_lower = message.lower()
         is_change_request = any(
-            w in msg_lower for w in ["add", "karo", "change", "include", "dark mode", "export", "bhi"]
+            w in msg_lower for w in [
+                "add", "karo", "change", "include", "dark mode", "export", "bhi",
+                "modify", "update", "use", "make", "want", "need", "feature", "remove", "replace", "support"
+            ]
         )
 
         if is_change_request:

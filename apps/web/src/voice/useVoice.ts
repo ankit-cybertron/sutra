@@ -105,7 +105,10 @@ export function useVoice(langMode: LangMode, handlers: VoiceHandlers): VoiceApi 
 
   const enable = useCallback(async () => {
     if (engineRef.current) return;
-    const engine: VoiceEngine = USE_MOCK ? new WebSpeechEngine() : new GnaniEngine(wsBase());
+    const hasWebSpeech =
+      typeof window !== "undefined" &&
+      ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
+    const engine: VoiceEngine = USE_MOCK || hasWebSpeech ? new WebSpeechEngine() : new GnaniEngine(wsBase());
     engine.setLang(langRef.current);
     engineRef.current = engine;
     unsubRef.current = engine.subscribe(onEvent);

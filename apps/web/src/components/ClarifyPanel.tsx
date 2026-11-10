@@ -31,7 +31,8 @@ export function ClarifyPanel(p: Props) {
   if (!q) return null;
   const total = p.questions.length;
   const last = p.index === total - 1;
-  const n = countChars(p.draft);
+  const displayDraft = p.partial ? (p.draft ? `${p.draft} ${p.partial}` : p.partial) : p.draft;
+  const n = countChars(displayDraft);
   const over = n > LIMITS.answer;
 
   return (
@@ -71,7 +72,7 @@ export function ClarifyPanel(p: Props) {
           <div className="idea idea-compact">
             <textarea
               id="answer"
-              value={p.draft}
+              value={displayDraft}
               onChange={(e) => p.onDraft(e.target.value)}
               placeholder={t(p.lang, "answerPlaceholder")}
               rows={3}

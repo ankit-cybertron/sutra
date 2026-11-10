@@ -25,7 +25,7 @@ interface Recognition {
 type RecognitionCtor = new () => Recognition;
 
 const LANG_MAP: Record<string, string> = { hi: "hi-IN", en: "en-IN", hinglish: "hi-IN" };
-const TURN_GAP_MS = 1200;
+const TURN_GAP_MS = 1400;
 
 export class WebSpeechEngine extends Emitter implements VoiceEngine {
   private rec: Recognition | null = null;
@@ -58,11 +58,15 @@ export class WebSpeechEngine extends Emitter implements VoiceEngine {
         const r = e.results[i];
         if (!r) continue;
         const text = r[0].transcript;
-        if (r.isFinal) this.emit({ type: "segment", text });
-        else interim += text;
+        if (r.isFinal) {
+          this.emit({ type: "segment", text });
+        } else {
+          interim += text;
+        }
       }
       this.emit({ type: "speech_start" });
-      if (interim) this.emit({ type: "partial", text: interim });
+      this.emit({ type: "level", rms: 0.08 });
+      this.emit({ type: "partial", text: interim });
       window.clearTimeout(this.gapTimer);
       this.gapTimer = window.setTimeout(() => this.emit({ type: "turn_end" }), TURN_GAP_MS);
     };

@@ -32,9 +32,10 @@ export function ChatPanel(p: Props) {
     endRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [p.messages.length, p.busy]);
 
-  const n = countChars(p.draft);
+  const displayDraft = p.partial ? (p.draft ? `${p.draft} ${p.partial}` : p.partial) : p.draft;
+  const n = countChars(displayDraft);
   const over = n > LIMITS.chat;
-  const canSend = !!p.draft.trim() && !over && !p.busy && !p.rateLimited;
+  const canSend = !!displayDraft.trim() && !over && !p.busy && !p.rateLimited;
 
   return (
     <aside className="chat" aria-label={t(p.lang, "chatTitle")}>
@@ -98,7 +99,7 @@ export function ChatPanel(p: Props) {
         <textarea
           id="chat-draft"
           rows={2}
-          value={p.draft}
+          value={displayDraft}
           placeholder={t(p.lang, "chatPlaceholder")}
           onChange={(e) => p.onDraft(e.target.value)}
           spellCheck={false}

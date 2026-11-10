@@ -88,7 +88,7 @@ export default function App() {
   const [doc, setDoc] = useState<PlanDoc | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatDraft, setChatDraft, chatDraftRef] = useStateRef("");
-  const [partial, setPartial] = useState("");
+  const [partial, setPartial, partialRef] = useStateRef("");
   const [busy, setBusy, busyRef] = useStateRef(false);
   const [notice, setNotice] = useState<NoticeState | null>(null);
   const [speakReplies, setSpeakReplies] = useState(true);
@@ -105,7 +105,7 @@ export default function App() {
 
   // Voice callbacks are routed through a ref to the latest actions, so they never see stale state.
   const actions = useRef({
-    submitIdea: () => {},
+    submitIdea: (_directPlan?: boolean) => {},
     advance: (_skip: boolean) => {},
     sendChat: (_text: string, _source: InputSource) => {},
   });
@@ -121,7 +121,7 @@ export default function App() {
           ideaSourceRef.current = "voice";
           setIdea((p) => clamp(joinSpeech(p, clean), LIMITS.idea * 2));
         }
-        if (cmd === "done") actions.current.submitIdea();
+        if (cmd === "done") actions.current.submitIdea(true);
       } else if (st === "clarifying") {
         if (clean) setDraft((p) => clamp(joinSpeech(p, clean), LIMITS.answer * 2));
         if (cmd === "skip") actions.current.advance(true);
@@ -129,11 +129,34 @@ export default function App() {
       } else if (st === "plan") {
         if (clean) setChatDraft((p) => clamp(joinSpeech(p, clean), LIMITS.chat * 2));
       }
+      setPartial("");
     },
     onTurnEnd: () => {
-      // In the plan chat, a finished spoken turn is sent automatically (it is a conversation).
-      if (stageRef.current === "plan" && chatDraftRef.current.trim()) {
-        actions.current.sendChat(chatDraftRef.current, "voice");
+      // 1. Commit any remaining uncommitted partial first
+      const rem = partialRef.current.trim();
+      if (rem) {
+        if (stageRef.current === "idle") {
+          ideaSourceRef.current = "voice";
+          setIdea((p) => clamp(joinSpeech(p, rem), LIMITS.idea * 2));
+        } else if (stageRef.current === "clarifying") {
+          setDraft((p) => clamp(joinSpeech(p, rem), LIMITS.answer * 2));
+        } else if (stageRef.current === "plan") {
+          setChatDraft((p) => clamp(joinSpeech(p, rem), LIMITS.chat * 2));
+        }
+        setPartial("");
+      }
+
+      // 2. Auto-advance turn
+      if (stageRef.current === "idle") {
+        const text = ideaRef.current.trim() || rem;
+        if (text) {
+          actions.current.submitIdea(true);
+        }
+      } else if (stageRef.current === "plan") {
+        const chatText = chatDraftRef.current.trim() || rem;
+        if (chatText) {
+          actions.current.sendChat(chatText, "voice");
+        }
       }
     },
     onBargeIn: () => {
@@ -195,13 +218,15 @@ export default function App() {
     }
   }
 
-  async function submitIdea(): Promise<void> {
-    const text = cleanInput(ideaRef.current);
+  async function submitIdea(directPlan = false): Promise<void> {
+    const activeText = partialRef.current ? (ideaRef.current ? `${ideaRef.current} ${partialRef.current}` : partialRef.current) : ideaRef.current;
+    const text = cleanInput(activeText);
     if (!text) return setNotice({ kind: "invalid" });
     if (countChars(text) > LIMITS.idea) return setNotice({ kind: "long" });
     if (busyRef.current || tooSoon("idea")) return;
     setNotice(null);
     setBusy(true);
+    setPartial("");
     try {
       const res = await api.createSession({ idea: text, lang: langLockedRef.current ? langRef.current : "auto", source: ideaSourceRef.current });
       if (!langLockedRef.current) setLangState(res.detectedLang);
@@ -212,12 +237,18 @@ export default function App() {
       setQuestions(qs);
       setQIndex(0);
       setDraft("");
-      const first = qs[0];
-      if (!first) {
+
+      // If user came via voice or directPlan, send immediately to Groq to generate markdown plan!
+      if (directPlan || ideaSourceRef.current === "voice" || qs.length === 0) {
         await runPlan(res.sessionId, [], l);
       } else {
-        setStage("clarifying");
-        void say(first.spokenText, l);
+        const first = qs[0];
+        if (!first) {
+          await runPlan(res.sessionId, [], l);
+        } else {
+          setStage("clarifying");
+          void say(first.spokenText, l);
+        }
       }
     } catch (e) {
       fail(e);

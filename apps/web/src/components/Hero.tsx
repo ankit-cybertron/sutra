@@ -23,9 +23,10 @@ interface Props {
 }
 
 export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voiceLevel, onIdea, onSubmit, onOrb, gate, notice }: Props) {
-  const n = countChars(idea);
+  const displayIdea = partial ? (idea ? `${idea} ${partial}` : partial) : idea;
+  const n = countChars(displayIdea);
   const over = n > LIMITS.idea;
-  const disabled = busy || rateLimited || !idea.trim() || over;
+  const disabled = busy || rateLimited || !displayIdea.trim() || over;
 
   return (
     <section className="hero" id="top">
@@ -44,7 +45,7 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
           </label>
           <textarea
             id="idea"
-            value={idea}
+            value={displayIdea}
             onChange={(e) => onIdea(e.target.value)}
             placeholder={t(lang, "placeholder")}
             rows={4}
@@ -63,7 +64,8 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
         </div>
         {partial && (
           <p className="partial" aria-live="polite">
-            … {partial}
+            <span className="live-dot" aria-hidden="true" />
+            <span className="live-label">Live:</span> {partial}
           </p>
         )}
 
