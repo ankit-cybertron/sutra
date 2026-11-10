@@ -62,6 +62,42 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
             </span>
           </div>
         </div>
+
+        <div className="hero-samples" aria-label="Sample ideas">
+          <span className="sample-label">
+            {lang === "hi" ? "नमूना विचार:" : lang === "hinglish" ? "Try a sample:" : "Try a sample:"}
+          </span>
+          <div className="sample-chips">
+            <button
+              type="button"
+              className="sample-chip"
+              onClick={() => onIdea("Doctor clinic slot booking and patient reminders on WhatsApp")}
+            >
+              Clinic slots
+            </button>
+            <button
+              type="button"
+              className="sample-chip"
+              onClick={() => onIdea("Automated test failure triage and flaky test detector for CI/CD")}
+            >
+              Test triage
+            </button>
+            <button
+              type="button"
+              className="sample-chip"
+              onClick={() => onIdea("Hyperlocal kirana grocery delivery with real-time merchant inventory")}
+            >
+              Kirana delivery
+            </button>
+            <button
+              type="button"
+              className="sample-chip"
+              onClick={() => onIdea("Freelance developer invoice tracker with automated payment reminders")}
+            >
+              Freelance invoices
+            </button>
+          </div>
+        </div>
         {partial && (
           <p className="partial" aria-live="polite">
             <span className="live-dot" aria-hidden="true" />

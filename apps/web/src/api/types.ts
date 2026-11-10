@@ -37,6 +37,8 @@ export interface Plan {
   oneLiner: string;
   targetUser: string;
   problem: string;
+  coreLoop?: string[];
+  readinessScore?: number;
   /** Max 5, enforced by the backend schema. */
   mustHave: MustHave[];
   later: string[];

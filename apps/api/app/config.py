@@ -54,10 +54,10 @@ class Settings(BaseModel):
     # Groq LLM
     groq_api_key: str = Field(default_factory=_get_clean_groq_key)
     groq_model: str = Field(
-        default_factory=lambda: os.getenv("GROQ_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-20b"))
+        default_factory=lambda: os.getenv("GROQ_MODEL", os.getenv("LLM_MODEL", "llama-3.1-8b-instant"))
     )
     groq_fallback_model: str = Field(
-        default_factory=lambda: os.getenv("GROQ_FALLBACK_MODEL", "qwen/qwen3.8-27b")
+        default_factory=lambda: os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
     )
     groq_timeout_s: float = Field(
         default_factory=lambda: float(os.getenv("GROQ_TIMEOUT_S", os.getenv("LLM_TIMEOUT_S", "25.0")))

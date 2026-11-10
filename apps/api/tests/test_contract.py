@@ -44,6 +44,8 @@ class ContractPlan(StrictModel):
     oneLiner: str
     targetUser: str
     problem: str
+    coreLoop: Optional[List[str]] = None
+    readinessScore: Optional[int] = None
     mustHave: List[ContractMustHave]
     later: List[str]
     outOfScope: List[str]

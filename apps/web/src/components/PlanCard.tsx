@@ -56,7 +56,12 @@ export function PlanCard({ doc, lang }: Props) {
         <span className="plan-id">
           {BRAND.planPrefix}-{doc.id.replace(/^p_/, "").slice(0, 3).toUpperCase()} · {plan.title.toUpperCase()}
         </span>
-        <span className="plan-ver">{t(lang, "version", { n: doc.version })}</span>
+        <div className="plan-badges">
+          <span className="plan-readiness" title="Agent build readiness score">
+            READINESS {plan.readinessScore || 92}/100
+          </span>
+          <span className="plan-ver">{t(lang, "version", { n: doc.version })}</span>
+        </div>
       </header>
 
       <div className="plan-body">
@@ -81,6 +86,20 @@ export function PlanCard({ doc, lang }: Props) {
           <h3 className="plan-label">{t(lang, "pUser")}</h3>
           <p>{plan.targetUser}</p>
         </section>
+
+        {plan.coreLoop && plan.coreLoop.length > 0 && (
+          <section className="core-loop-section">
+            <h3 className="plan-label">{lang === "hi" ? "कोर लूप (3 चरण)" : lang === "hinglish" ? "CORE LOOP" : "CORE LOOP"}</h3>
+            <ol className="core-loop-steps">
+              {plan.coreLoop.map((step, i) => (
+                <li key={i} className="core-loop-item">
+                  <span className="core-step-badge">{i + 1}</span>
+                  <span className="core-step-text">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         <section>
           <h3 className="plan-label">{t(lang, "pMust")}</h3>

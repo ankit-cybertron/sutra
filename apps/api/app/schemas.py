@@ -98,6 +98,8 @@ class Plan(CamelModel):
     one_liner: str
     target_user: str
     problem: str
+    core_loop: List[str] = Field(default_factory=list)
+    readiness_score: int = Field(default=92)
     must_have: List[MustHave] = Field(description="Max 5 items")
     later: List[str] = Field(default_factory=list)
     out_of_scope: List[str] = Field(default_factory=list)
