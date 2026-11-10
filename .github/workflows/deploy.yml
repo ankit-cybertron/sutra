@@ -42,6 +42,7 @@ jobs:
         env:
           GNANI_MODE: mock
           GROQ_API_KEY: mock_key
+          GEMINI_API_KEY: mock_key
         run: |
           PYTHONPATH=. pytest apps/api/tests/ -v
 

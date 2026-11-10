@@ -4,8 +4,15 @@ import asyncio
 import logging
 import re
 from typing import Any, Dict, Optional
-from google import genai
-from google.genai.errors import APIError
+
+try:
+    from google import genai
+    from google.genai.errors import APIError
+    HAS_GOOGLE_GENAI = True
+except ImportError:
+    genai = None  # type: ignore
+    APIError = Exception  # type: ignore
+    HAS_GOOGLE_GENAI = False
 
 from apps.api.app.config import settings
 
@@ -20,9 +27,13 @@ class GeminiAdapter:
     ):
         self.api_key = api_key if api_key is not None else settings.gemini_api_key
         self.model = model or settings.gemini_model or "gemini-2.5-flash"
-        self.client: Optional[genai.Client] = None
+        self.client: Any = None
 
-        if self.api_key and not self.api_key.startswith("your_") and not self.api_key.startswith("mock"):
+        if not HAS_GOOGLE_GENAI:
+            self.status = "unconfigured"
+            self.last_error = "google-genai package not installed"
+            logger.info("google-genai package not installed. Using deterministic architecture synthesis.")
+        elif self.api_key and not self.api_key.startswith("your_") and not self.api_key.startswith("mock"):
             try:
                 self.client = genai.Client(api_key=self.api_key)
                 self.status = "connected"
