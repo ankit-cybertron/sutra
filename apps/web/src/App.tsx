@@ -299,9 +299,9 @@ export default function App() {
     setBusy(true);
     speaker.stop();
     setMessages((m) => [...m, { id: uid(), role: "user", text, source, ts: Date.now() }]);
-    const l = pickLang();
+    const l = langRef.current;
     try {
-      const r = await api.chat(doc.id, { message: text, source, lang: langLockedRef.current ? langRef.current : "auto" });
+      const r = await api.chat(doc.id, { message: text, source, lang: l });
       setMessages((m) => {
         const next: ChatMessage[] = [...m, { id: uid(), role: "ai", text: r.reply, source: "text", ts: Date.now() }];
         if (r.plan) next.push({ id: uid(), role: "system", text: t(l, "planUpdated", { n: r.plan.version }), source: "text", ts: Date.now() });

@@ -89,9 +89,30 @@ class GroqAdapter:
             logger.warning(f"Groq network error ({exc}). Falling back to mock response.")
             return {"mock": True}
 
+        if response.status_code == 404 and "model" in response.text.lower():
+            logger.warning(f"Groq model '{model_name}' not found (404). Trying resilient fallback models...")
+            fallbacks = ["llama-3.1-8b-instant", "llama-3.1-70b-versatile", "llama3-8b-8192", "llama3-70b-8192", "mixtral-8x7b-32768"]
+            for fb in fallbacks:
+                if fb == model_name:
+                    continue
+                try:
+                    payload["model"] = fb
+                    async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                        fb_res = await client.post(self.base_url, headers=headers, json=payload)
+                    if fb_res.status_code == 200:
+                        logger.info(f"Groq model successfully switched to '{fb}'")
+                        self.model = fb
+                        data = fb_res.json()
+                        usage = data.get("usage", {})
+                        self.total_calls += 1
+                        self.estimated_tokens += usage.get("total_tokens", 500)
+                        return data
+                except Exception as fb_err:
+                    logger.warning(f"Groq fallback '{fb}' failed: {fb_err}")
+
         if response.status_code != 200:
             logger.warning(f"Groq API error {response.status_code}: {response.text[:120]}. Falling back.")
-            if response.status_code in (400, 401, 403):
+            if response.status_code in (401, 403):
                 self._disabled = True
             return {"mock": True}
 
@@ -196,18 +217,36 @@ class GroqAdapter:
     # --- Mocks for offline test / CI ---
 
     def _mock_clarify(self, idea: str, lang: str) -> Tuple[Lang, List[Question]]:
-        # If the idea is already exceptionally specific (> 20 words and contains specific stack/role)
-        is_hindi = any(
-            word in idea.lower()
-            for word in ["karo", "chahiye", "mera", "bana", "kaise", "hai", "karna", "app"]
-        )
-        detected: Lang = "hinglish" if is_hindi else ("hi" if lang == "hi" else "en")
+        # If user explicitly chose language in UI, prioritize it; else detect
+        if lang in ("en", "hi", "hinglish"):
+            detected: Lang = lang
+        else:
+            is_hindi = any(
+                word in idea.lower()
+                for word in ["karo", "chahiye", "mera", "bana", "kaise", "hai", "karna", "app"]
+            )
+            detected = "hinglish" if is_hindi else "en"
 
         # 0 questions test case: if idea is already fully specific
         if "fully specific" in idea.lower() or "no questions" in idea.lower():
             return detected, []
 
-        if is_hindi or detected == "hinglish":
+        if detected == "hi":
+            questions = [
+                Question(
+                    id="q1",
+                    display_text="मुख्य लक्षित उपभोक्ता कौन हैं - एकल डेवलपर्स या छोटे व्यवसाय?",
+                    spoken_text="मुख्य लक्षित उपभोक्ता कौन हैं, एकल डेवलपर्स या छोटे व्यवसाय?",
+                    options=["एकल डेवलपर्स", "कॉलेज छात्र", "छोटे व्यवसाय", "आम जनता"],
+                ),
+                Question(
+                    id="q2",
+                    display_text="पहले संस्करण के लिए प्राथमिक इंटरफ़ेस क्या होगा: वेब ऐप या मोबाइल?",
+                    spoken_text="पहले संस्करण के लिए प्राथमिक इंटरफ़ेस क्या होगा, वेब ऐप या मोबाइल?",
+                    options=["वेब ऐप", "मोबाइल ऐप", "सीएलआई टूल", "क्रोम एक्सटेंशन"],
+                ),
+            ]
+        elif detected == "hinglish":
             questions = [
                 Question(
                     id="q1",
@@ -248,18 +287,31 @@ class GroqAdapter:
 
         plan_lang: Lang = "hi" if lang == "hi" else ("hinglish" if lang == "hinglish" else "en")
 
+        if plan_lang == "hi":
+            one_liner = "आवाज़ के विचारों को संरचित, निष्पादन योग्य तकनीकी ब्लूप्रिंट में बदलें।"
+            target_user = "भारत के निर्माता और छात्र जो हिंदी में विचार करते हैं।"
+            problem = "असंरचित विचारों को ठोस इंजीनियरिंग आवश्यकताओं में बदलना कठिन और धीमा होता है।"
+        elif plan_lang == "hinglish":
+            one_liner = "Voice thoughts ko structured, actionable engineering blueprints mein badlein."
+            target_user = "Solo builders aur students in India jo Hinglish mein brainstorm karte hain."
+            problem = "Chaotic voice thoughts ko concrete engineering requirements mein badalna slow aur error-prone hai."
+        else:
+            one_liner = "Transform voice thoughts into structured, executable technical blueprints."
+            target_user = "Solo developers and technical founders building vertical-slice products."
+            problem = "Translating chaotic voice thoughts into concrete engineering requirements is slow and error-prone."
+
         return Plan(
             title=title,
-            one_liner="Transform voice thoughts into structured, executable technical blueprints.",
-            target_user="Solo builders and students in India who brainstorm in Hinglish.",
-            problem="Translating chaotic voice thoughts into concrete engineering requirements is slow and error-prone.",
+            one_liner=one_liner,
+            target_user=target_user,
+            problem=problem,
             must_have=[
                 MustHave(
-                    name="Live Voice Intake & Clarification",
+                    name="Live Voice Intake & Plan Synthesis",
                     why="Captures unstructured brainstorms with zero friction.",
                     acceptance=[
                         "Accepts streaming 16kHz PCM audio",
-                        "Generates max 2 clarifying questions within 3s",
+                        "Generates structured vertical slice roadmap",
                         "Spoken playback via TTS",
                     ],
                 ),
@@ -296,7 +348,7 @@ class GroqAdapter:
                 BuildStep(step=3, title="Implement Voice & LLM Adapters", detail="Integrate Gnani STT/TTS and Groq structured output."),
                 BuildStep(step=4, title="Build Reactive Frontend", detail="Create voice orb and plan inspection cards."),
             ],
-            tech_notes="FastAPI, Groq LLM (llama-3.3-70b-versatile), Gnani AI (Prisma v3 + Timbre v2.5), Atomic JSON file store.",
+            tech_notes="FastAPI, Groq LLM (llama-3.1-8b-instant), Gnani AI (Prisma v3 + Timbre v2.5), Atomic JSON file store.",
             risks=[
                 "Voice latency spikes on low bandwidth",
                 "Hinglish code-mixing dialect variations",
@@ -328,18 +380,38 @@ class GroqAdapter:
             ]
         )
 
+        chosen_lang = (lang or getattr(current_plan, "language", "en") or "en").lower()
+
         if is_change_request:
             updated = current_plan.model_copy(deep=True)
             if "dark mode" in msg_lower:
                 updated.tech_notes += " Includes system-responsive dark mode styling."
-                change = "Added dark mode design tokens to tech notes."
-                reply = "Dark mode plan mein add kar diya hai! Tech notes update ho gaye hain."
-                spoken = "Dark mode plan mein add kar diya gaya hai."
+                if chosen_lang == "hi":
+                    change = "डार्क मोड डिज़ाइन टोकन्स जोड़े गए।"
+                    reply = "डार्क मोड को प्लान में जोड़ दिया गया है! टेक नोट्स अपडेट हो चुके हैं।"
+                    spoken = "डार्क मोड को प्लान में जोड़ दिया गया है।"
+                elif chosen_lang == "hinglish":
+                    change = "Added dark mode design tokens to tech notes."
+                    reply = "Dark mode plan mein add kar diya hai! Tech notes update ho gaye hain."
+                    spoken = "Dark mode plan mein add kar diya gaya hai."
+                else:
+                    change = "Added dark mode design tokens to tech notes."
+                    reply = "Dark mode has been added to your plan! Technical notes have been updated."
+                    spoken = "Dark mode has been added to your plan."
             else:
                 updated.later.append(message.strip())
-                change = f"Scoped '{message.strip()}' into v2 backlog."
-                reply = f"Aapka suggestion '{message}' note kar liya hai aur roadmap mein add kar diya hai."
-                spoken = "Plan update ho gaya hai."
+                if chosen_lang == "hi":
+                    change = f"'{message.strip()}' को v2 रोडमैप में शामिल किया गया।"
+                    reply = f"आपका सुझाव '{message}' नोट कर लिया गया है और रोडमैप में जोड़ दिया गया है।"
+                    spoken = "प्लान अपडेट हो गया है।"
+                elif chosen_lang == "hinglish":
+                    change = f"Scoped '{message.strip()}' into v2 backlog."
+                    reply = f"Aapka suggestion '{message}' note kar liya hai aur roadmap mein add kar diya hai."
+                    spoken = "Plan update ho gaya hai."
+                else:
+                    change = f"Scoped '{message.strip()}' into v2 roadmap."
+                    reply = f"Your suggestion '{message}' has been noted and added to the project roadmap."
+                    spoken = "Your plan has been updated."
 
             updated.suggestions = [
                 Suggestion(id="s4", text="Add offline PWA support", impact="medium"),
@@ -348,6 +420,14 @@ class GroqAdapter:
             ]
             return reply, spoken, updated, [change]
         else:
-            reply = f"Architecture ke mutabiq, {current_plan.title} ko fast iteration aur lean vertical slice ke liye design kiya gaya hai."
-            spoken = "Yeh plan lean vertical slice ke liye design kiya gaya hai."
+            if chosen_lang == "hi":
+                reply = f"आर्किटेक्चर के अनुसार, {current_plan.title} को तेज़ विकास और न्यूनतम व्यावहारिक उत्पाद (MVP) के लिए तैयार किया गया है।"
+                spoken = "यह प्लान तेज़ विकास के लिए तैयार किया गया है।"
+            elif chosen_lang == "hinglish":
+                reply = f"Architecture ke mutabiq, {current_plan.title} ko fast iteration aur lean vertical slice ke liye design kiya gaya hai."
+                spoken = "Yeh plan lean vertical slice ke liye design kiya gaya hai."
+            else:
+                reply = f"According to the architectural blueprint, {current_plan.title} is designed for rapid execution and a lean vertical slice."
+                spoken = "This plan is designed for rapid vertical-slice development."
+
             return reply, spoken, None, []

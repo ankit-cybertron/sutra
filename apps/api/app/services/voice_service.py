@@ -60,7 +60,11 @@ class VoiceService:
                     )
                 except Exception:
                     pass
-                await websocket.close(code=1008, reason="BUSY")
+                try:
+                    if websocket.client_state.name == "CONNECTED":
+                        await websocket.close(code=1008, reason="BUSY")
+                except Exception:
+                    pass
                 return
             self.active_devices.add(device_id)
 
@@ -172,16 +176,18 @@ class VoiceService:
                     except json.JSONDecodeError:
                         pass
 
-        except WebSocketDisconnect:
-            logger.info(f"Client disconnected WS voice session for device {device_id}")
-        except Exception as exc:
-            logger.error(f"Error in realtime STT WebSocket handler: {exc}")
-            try:
-                await websocket.send_json(
-                    {"type": "error", "message": "Internal error in voice streaming relay."}
-                )
-            except Exception:
-                pass
+        except (WebSocketDisconnect, Exception) as exc:
+            if "disconnect" in str(type(exc)).lower() or "connectionclosed" in str(type(exc)).lower():
+                logger.info(f"Client disconnected WS voice session for device {device_id}")
+            else:
+                logger.warning(f"Realtime STT WebSocket notice ({type(exc).__name__}): {exc}")
+                try:
+                    if websocket.client_state.name == "CONNECTED":
+                        await websocket.send_json(
+                            {"type": "error", "message": "Voice streaming ended."}
+                        )
+                except Exception:
+                    pass
         finally:
             if upstream_task:
                 upstream_task.cancel()

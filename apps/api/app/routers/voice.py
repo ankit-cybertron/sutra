@@ -11,6 +11,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from apps.api.app.config import settings
 from apps.api.app.dependencies import get_device_id, tts_rate_limiter
 from apps.api.app.guardrails import validate_input
 from apps.api.app.schemas import TTSInput
@@ -66,10 +67,26 @@ async def websocket_stt_relay(
     device_id: Optional[str] = Query(None),
 ):
     origin = websocket.headers.get("origin")
+    forwarded_host = websocket.headers.get("x-forwarded-host", "")
     host = websocket.headers.get("host", "")
+
     if origin and "://" in origin:
-        origin_host = origin.split("://", 1)[1].split("/", 1)[0]
-        if origin_host != host and "localhost" not in origin_host and "127.0.0.1" not in origin_host:
+        origin_domain = origin.split("://", 1)[1].split("/", 1)[0].split(":", 1)[0].lower()
+        host_domain = host.split(":", 1)[0].lower() if host else ""
+        forwarded_domain = forwarded_host.split(":", 1)[0].lower() if forwarded_host else ""
+
+        allowed_domains = {host_domain, forwarded_domain, "localhost", "127.0.0.1"}
+        is_allowed = (
+            origin_domain in allowed_domains
+            or any(origin in c or origin_domain in c for c in settings.cors_origins)
+            or origin_domain.endswith(".onrender.com")
+            or origin_domain.endswith(".elasticbeanstalk.com")
+            or origin_domain.endswith(".amazonaws.com")
+            or origin_domain == "localhost"
+            or origin_domain == "127.0.0.1"
+            or "*" in settings.cors_origins
+        )
+        if not is_allowed:
             await websocket.close(code=1008, reason="Origin not allowed")
             return
 

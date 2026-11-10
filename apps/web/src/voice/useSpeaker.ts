@@ -27,8 +27,25 @@ export function useSpeaker() {
       const line = text.trim().slice(0, 240);
       if (!line) return false;
       try {
-        if (USE_MOCK) {
-          if (!("speechSynthesis" in window)) return false;
+        if (!USE_MOCK) {
+          try {
+            const blob = await api.tts(line, lang);
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            await new Promise<void>((resolve, reject) => {
+              pendingRef.current = resolve;
+              audio.onended = () => resolve();
+              audio.onerror = () => reject(new Error("audio"));
+              audio.play().catch(reject);
+            });
+            URL.revokeObjectURL(url);
+            return true;
+          } catch {
+            // Backend TTS network error: fall back to browser speech synthesis
+          }
+        }
+        if (typeof window !== "undefined" && "speechSynthesis" in window) {
           return await new Promise<boolean>((resolve) => {
             const u = new SpeechSynthesisUtterance(line);
             u.lang = lang === "en" ? "en-IN" : "hi-IN";
@@ -38,18 +55,7 @@ export function useSpeaker() {
             window.speechSynthesis.speak(u);
           });
         }
-        const blob = await api.tts(line, lang);
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        await new Promise<void>((resolve, reject) => {
-          pendingRef.current = resolve;
-          audio.onended = () => resolve();
-          audio.onerror = () => reject(new Error("audio"));
-          audio.play().catch(reject);
-        });
-        URL.revokeObjectURL(url);
-        return true;
+        return false;
       } catch {
         return false;
       } finally {
