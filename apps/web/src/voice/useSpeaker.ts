@@ -1,17 +1,36 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { api } from "../api";
 import type { Lang } from "../api/types";
 import { USE_MOCK } from "../lib/config";
 
-// Consistent natural female voice selection
-function getNaturalFemaleVoice(lang: Lang): SpeechSynthesisVoice | null {
+// Cached speech synthesis voice for fallback stability
+let cachedVoice: SpeechSynthesisVoice | null = null;
+
+function loadAvailableVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return [];
+  const v = window.speechSynthesis.getVoices();
+  return v || [];
+}
+
+// Ensure voices are loaded early
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  loadAvailableVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    loadAvailableVoices();
+  };
+}
+
+function getConsistentFemaleVoice(lang: Lang): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
+  const voices = loadAvailableVoices();
   if (!voices || voices.length === 0) return null;
+
+  // If a voice is already locked in, maintain continuity throughout the session
+  if (cachedVoice) return cachedVoice;
 
   const isHindi = lang === "hi";
 
-  // Prioritized list of known natural female voices
+  // Prioritized list of known natural, smooth female voices
   const preferredFemaleNames = isHindi
     ? [
         "Lekha",
@@ -22,11 +41,12 @@ function getNaturalFemaleVoice(lang: Lang): SpeechSynthesisVoice | null {
         "Kavya",
         "Veena",
         "Heera",
+        "Samantha",
       ]
     : [
         "Samantha",
-        "Karen",
         "Victoria",
+        "Karen",
         "Moira",
         "Google UK English Female",
         "Google US English",
@@ -39,7 +59,10 @@ function getNaturalFemaleVoice(lang: Lang): SpeechSynthesisVoice | null {
 
   for (const name of preferredFemaleNames) {
     const match = voices.find((v) => v.name.toLowerCase().includes(name.toLowerCase()));
-    if (match) return match;
+    if (match) {
+      cachedVoice = match;
+      return match;
+    }
   }
 
   // Fallback: search for any voice containing 'female' in target language or general
@@ -48,15 +71,24 @@ function getNaturalFemaleVoice(lang: Lang): SpeechSynthesisVoice | null {
       v.lang.toLowerCase().startsWith(isHindi ? "hi" : "en") &&
       v.name.toLowerCase().includes("female"),
   );
-  if (femaleLang) return femaleLang;
+  if (femaleLang) {
+    cachedVoice = femaleLang;
+    return femaleLang;
+  }
 
   const anyLang = voices.find((v) => v.lang.toLowerCase().startsWith(isHindi ? "hi" : "en"));
-  return anyLang || voices[0] || null;
+  cachedVoice = anyLang || voices[0] || null;
+  return cachedVoice;
 }
 
 export function useSpeaker() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    // Pre-warm voices on hook mount
+    loadAvailableVoices();
+  }, []);
 
   const stop = useCallback(() => {
     audioRef.current?.pause();
@@ -75,9 +107,9 @@ export function useSpeaker() {
       const u = new SpeechSynthesisUtterance(line);
       u.lang = lang === "hi" ? "hi-IN" : "en-IN";
       u.rate = 1.0;
-      u.pitch = 1.05; // Slightly higher pitch for natural female clarity
+      u.pitch = 1.02; // Smooth natural female pitch
 
-      const voice = getNaturalFemaleVoice(lang);
+      const voice = getConsistentFemaleVoice(lang);
       if (voice) {
         u.voice = voice;
       }
@@ -99,8 +131,11 @@ export function useSpeaker() {
         if (!USE_MOCK) {
           try {
             const blob = await api.tts(line, lang);
-            // If the blob is audio/mpeg, it's real Gnani Timbre audio
-            if (blob.type === "audio/mpeg" || blob.size > 20000) {
+            // Real Gnani Timbre audio is MP3 or non-mock payload
+            // (Mock WAV sine wave tone is exactly 16044 bytes with audio/wav)
+            const isMockWav = blob.type === "audio/wav" && blob.size === 16044;
+
+            if (!isMockWav && blob.size > 200) {
               const url = URL.createObjectURL(blob);
               const audio = new Audio(url);
               audioRef.current = audio;

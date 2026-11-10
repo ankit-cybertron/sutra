@@ -73,12 +73,16 @@ class GnaniAdapter:
         )
         cache_file = self._get_cache_path(text, selected_voice, lang)
 
-        # 1. Check disk cache
+        # 1. Check disk cache (only return real audio, never mock WAV)
         if cache_file.exists():
-            self.tts_cache_hits += 1
             try:
                 audio_bytes = cache_file.read_bytes()
-                return audio_bytes, "audio/mpeg"
+                if audio_bytes.startswith(b"RIFF"):
+                    # Stale mock file in cache; remove it
+                    cache_file.unlink(missing_ok=True)
+                else:
+                    self.tts_cache_hits += 1
+                    return audio_bytes, "audio/mpeg"
             except Exception as e:
                 logger.warning(f"Error reading TTS cache file: {e}")
 
@@ -87,11 +91,6 @@ class GnaniAdapter:
             self.tts_calls += 1
             self.tts_chars += len(text)
             mock_audio = self._generate_mock_wav()
-            # Cache the mock audio too
-            try:
-                cache_file.write_bytes(mock_audio)
-            except Exception:
-                pass
             return mock_audio, "audio/wav"
 
         # 3. Call Gnani Timbre REST endpoint
@@ -120,23 +119,13 @@ class GnaniAdapter:
                 logger.warning(f"Gnani TTS request failed ({exc}). Falling back to mock audio.")
                 self.status = "error"
                 self.last_error = f"Gnani TTS network error: {exc}"
-                mock_audio = self._generate_mock_wav()
-                try:
-                    cache_file.write_bytes(mock_audio)
-                except Exception:
-                    pass
-                return mock_audio, "audio/wav"
+                return self._generate_mock_wav(), "audio/wav"
 
             if response.status_code != 200:
                 logger.warning(f"Gnani TTS returned {response.status_code}. Falling back to mock audio.")
                 self.status = "error"
                 self.last_error = f"Gnani TTS HTTP {response.status_code}: {response.text[:100]}"
-                mock_audio = self._generate_mock_wav()
-                try:
-                    cache_file.write_bytes(mock_audio)
-                except Exception:
-                    pass
-                return mock_audio, "audio/wav"
+                return self._generate_mock_wav(), "audio/wav"
 
             audio_data = response.content
             self.status = "connected"
