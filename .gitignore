@@ -44,6 +44,9 @@ test-results/
 apps/web/test-results/
 !apps/web/dist/**
 
+# AI agent skills & scratch
+.agents/
+
 # Data & Runtime
 data/
 *.db
