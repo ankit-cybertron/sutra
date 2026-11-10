@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from apps.api.app.config import settings
@@ -26,7 +27,6 @@ from apps.api.app.routers import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure directories exist
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.tts_cache_dir.mkdir(parents=True, exist_ok=True)
     yield
@@ -47,15 +47,45 @@ app.add_exception_handler(ApiProblemError, api_problem_exception_handler)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    errors = exc.errors()
     return problem_response(
         status_code=422,
-        code="VALIDATION_ERROR",
-        title="Unprocessable Entity",
-        detail="The request body or parameters failed validation.",
+        code="INPUT_INVALID",
+        title="Invalid Input",
+        detail="Please provide a valid input.",
         instance=request.url.path,
-        extra={"validation_errors": errors},
     )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    code = "NOT_FOUND" if exc.status_code == 404 else "INTERNAL"
+    return problem_response(
+        status_code=exc.status_code,
+        code=code,
+        title=str(exc.detail) if exc.detail else "Error",
+        detail=str(exc.detail) if exc.detail else "An error occurred.",
+        instance=request.url.path,
+    )
+
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'wasm-unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: blob:; "
+        "media-src 'self' blob:; "
+        "connect-src 'self' ws: wss:; "
+        "font-src 'self' data: https://fonts.gstatic.com; "
+        "frame-ancestors 'none';"
+    )
+    return response
 
 
 # Support X-Forwarded-Proto, X-Forwarded-For behind AWS ALB and Nginx

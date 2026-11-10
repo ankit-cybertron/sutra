@@ -2,23 +2,23 @@
 
 import pytest
 from apps.api.app.schemas import (
-    ClarifyQuestion,
-    ClarifyResult,
+    BuildStep,
+    CreateSessionResult,
+    MustHave,
     Plan,
-    PlanBuildStep,
-    PlanMustHave,
-    PlanSuggestion,
+    Question,
+    Suggestion,
 )
 
 
 def test_clarify_result_caps_questions_at_two():
     questions = [
-        ClarifyQuestion(id=f"q{i}", display_text=f"Q{i}", spoken_text=f"Q{i}", options=[])
+        Question(id=f"q{i}", display_text=f"Q{i}", spoken_text=f"Q{i}", options=[])
         for i in range(5)
     ]
-    res = ClarifyResult(
-        detected_language="en",
-        idea_summary="Test summary",
+    res = CreateSessionResult(
+        session_id="ses_123",
+        detected_lang="en",
         questions=questions,
     )
     assert len(res.questions) == 2
@@ -28,7 +28,7 @@ def test_clarify_result_caps_questions_at_two():
 
 def test_plan_caps_must_have_at_five():
     must_haves = [
-        PlanMustHave(name=f"F{i}", why=f"Why {i}", acceptance=[f"Acc {i}"])
+        MustHave(name=f"F{i}", why=f"Why {i}", acceptance=[f"Acc {i}"])
         for i in range(8)
     ]
     plan = Plan(
@@ -39,12 +39,12 @@ def test_plan_caps_must_have_at_five():
         must_have=must_haves,
         later=[],
         out_of_scope=[],
-        build_order=[PlanBuildStep(step=1, title="S1", detail="D1")],
+        build_order=[BuildStep(step=1, title="S1", detail="D1")],
         tech_notes="FastAPI",
         risks=[],
         assumptions=[],
         open_questions=[],
-        suggestions=[PlanSuggestion(id=f"s{i}", text=f"S{i}", impact=f"I{i}") for i in range(3)],
+        suggestions=[Suggestion(id=f"s{i}", text=f"S{i}", impact="medium") for i in range(3)],
         first_prompt="Build it",
         language="en",
     )

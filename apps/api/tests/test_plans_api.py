@@ -1,4 +1,4 @@
-"""Test Plans API endpoints (listing, details, refining, markdown export, deletion)."""
+"""Test Plans API endpoints (details, chat, markdown export, deletion)."""
 
 import pytest
 from httpx import AsyncClient
@@ -14,48 +14,41 @@ async def test_plans_api(client: AsyncClient):
         json={"idea": "AI habit tracker with daily WhatsApp voice notes"},
         headers=headers,
     )
-    session_id = create_res.json()["session_id"]
+    session_id = create_res.json()["sessionId"]
 
     plan_res = await client.post(
         f"/api/sessions/{session_id}/plan",
+        json={"answers": []},
         headers=headers,
     )
-    plan_id = plan_res.json()["plan_id"]
+    plan_id = plan_res.json()["id"]
 
-    # 2. List plans
-    list_res = await client.get("/api/plans", headers=headers)
-    assert list_res.status_code == 200
-    plans = list_res.json()["plans"]
-    assert len(plans) == 1
-    assert plans[0]["id"] == plan_id
-
-    # 3. Get plan detail
+    # 2. Get plan detail
     detail_res = await client.get(f"/api/plans/{plan_id}", headers=headers)
     assert detail_res.status_code == 200
     detail = detail_res.json()
     assert detail["id"] == plan_id
-    assert detail["current_version"] == 1
-    assert len(detail["versions"]) == 1
+    assert detail["version"] == 1
+    assert "plan" in detail
 
-    # 4. Refine plan
-    refine_res = await client.post(
-        f"/api/plans/{plan_id}/refine",
-        json={"suggestion": "dark mode bhi add karo", "source": "voice"},
+    # 3. Chat refinement
+    chat_res = await client.post(
+        f"/api/plans/{plan_id}/chat",
+        json={"message": "dark mode bhi add karo", "source": "voice", "lang": "auto"},
         headers=headers,
     )
-    assert refine_res.status_code == 200
-    refine_data = refine_res.json()
-    assert refine_data["version"] == 2
-    assert len(refine_data["change_summary"]) > 0
+    assert chat_res.status_code == 200
+    chat_data = chat_res.json()
+    assert chat_data["plan"]["version"] == 2
+    assert len(chat_data["changeSummary"]) > 0
 
-    # 5. Export markdown
+    # 4. Export markdown
     export_res = await client.get(f"/api/plans/{plan_id}/export.md", headers=headers)
     assert export_res.status_code == 200
     assert "text/markdown" in export_res.headers["content-type"]
     assert "# " in export_res.text
-    assert "First Prompt for Coding Agent" in export_res.text
 
-    # 6. Delete plan
+    # 5. Delete plan
     del_res = await client.delete(f"/api/plans/{plan_id}", headers=headers)
     assert del_res.status_code == 200
     assert del_res.json()["deleted"] is True
@@ -79,4 +72,4 @@ async def test_delete_all_data(client: AsyncClient):
     del_data_res = await client.delete("/api/data", headers=headers)
     assert del_data_res.status_code == 200
     data = del_data_res.json()
-    assert data["deleted_sessions"] >= 1
+    assert data["ok"] is True

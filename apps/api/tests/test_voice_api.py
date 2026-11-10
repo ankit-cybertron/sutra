@@ -39,4 +39,4 @@ async def test_usage_endpoint(client: AsyncClient):
     assert "groq" in data
     assert "gnani" in data
     assert "calls" in data["groq"]
-    assert "stt_calls" in data["gnani"]
+    assert "sttCalls" in data["gnani"]

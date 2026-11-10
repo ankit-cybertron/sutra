@@ -1,4 +1,4 @@
-"""Service managing plans, version increments, refinements, and Markdown exports."""
+"""Service managing plans, versioning, chat turns, and Markdown exports."""
 
 import time
 import uuid
@@ -6,11 +6,17 @@ from typing import Dict, List, Optional, Tuple
 
 from apps.api.app.adapters import get_groq_adapter
 from apps.api.app.errors import ApiProblemError
+from apps.api.app.guardrails import validate_input
 from apps.api.app.schemas import (
+    AnswerInput,
+    ChatResult,
+    InputSource,
+    LangMode,
     Plan,
     PlanDoc,
-    PlanSummary,
-    PlanVersion,
+    PlanStorageDoc,
+    StoredPlanVersion,
+    Turn,
 )
 from apps.api.app.services.session_service import SessionService
 from apps.api.app.store import get_store
@@ -29,12 +35,24 @@ class PlanService:
     def session_service(self):
         return SessionService()
 
-    async def generate_plan(self, device_id: str, session_id: str) -> Tuple[PlanDoc, Plan]:
+    async def generate_plan(
+        self,
+        device_id: str,
+        session_id: str,
+        answers: List[AnswerInput],
+    ) -> PlanDoc:
         session = await self.session_service.get_session(device_id, session_id)
 
+        # Validate each answer text
+        cleaned_answers: List[AnswerInput] = []
+        for a in answers:
+            cleaned_text = validate_input(a.text, max_chars=500, field_name="Answer")
+            cleaned_answers.append(AnswerInput(question_id=a.question_id, text=cleaned_text))
+
+        # Generate plan via Groq
         plan = await self.groq.plan(
             idea=session.idea_raw,
-            answers=session.answers,
+            answers=cleaned_answers,
             lang=session.idea_lang,
         )
 
@@ -42,210 +60,215 @@ class PlanService:
         now = time.time()
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now))
 
-        initial_version = PlanVersion(
+        initial_summary = ["Initial structured plan synthesized from idea & answers."]
+        initial_version = StoredPlanVersion(
             n=1,
             plan=plan,
-            change_summary=["Initial structured plan synthesized from idea & answers."],
+            change_summary=initial_summary,
             created_at=now_iso,
             source="generate",
         )
 
-        plan_doc = PlanDoc(
+        plan_storage = PlanStorageDoc(
             id=plan_id,
             device_id=device_id,
             session_id=session_id,
             title=plan.title,
             versions=[initial_version],
+            chat_turns=[],
             created_at=now_iso,
             updated_at=now_iso,
         )
 
-        await self.store.put("plans", plan_doc.model_dump())
+        await self.store.put("plans", plan_storage.model_dump(by_alias=False))
 
-        # Update session status
+        # Update session status & answers
+        session.answers = cleaned_answers
         session.status = "completed"
-        await self.store.put("sessions", session.model_dump())
+        await self.store.put("sessions", session.model_dump(by_alias=False))
 
-        return plan_doc, plan
-
-    async def refine_plan(
-        self,
-        device_id: str,
-        plan_id: str,
-        suggestion: str,
-        source: str = "text",
-    ) -> Tuple[PlanDoc, int, Plan, List[str]]:
-        plan_doc = await self.get_plan(device_id, plan_id)
-        current_version = plan_doc.versions[-1]
-
-        # Call Groq refine
-        refine_res = await self.groq.refine(
-            current_plan=current_version.plan,
-            suggestion=suggestion,
-            lang=current_version.plan.language,
+        return PlanDoc(
+            id=plan_id,
+            version=1,
+            plan=plan,
+            change_summary=initial_summary,
         )
 
-        now = time.time()
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now))
-        new_version_num = len(plan_doc.versions) + 1
-
-        new_version = PlanVersion(
-            n=new_version_num,
-            plan=refine_res.plan,
-            change_summary=refine_res.change_summary,
-            created_at=now_iso,
-            source="suggestion",
-        )
-
-        plan_doc.versions.append(new_version)
-        plan_doc.title = refine_res.plan.title
-        plan_doc.updated_at = now_iso
-
-        await self.store.put("plans", plan_doc.model_dump())
-        return plan_doc, new_version_num, refine_res.plan, refine_res.change_summary
-
-    async def get_plan(self, device_id: str, plan_id: str) -> PlanDoc:
+    async def get_plan_storage(self, device_id: str, plan_id: str) -> PlanStorageDoc:
         doc = await self.store.get("plans", plan_id)
-        if not doc or doc.get("device_id") != device_id:
+        if not doc or (device_id and doc.get("device_id") != device_id and device_id != "anonymous-device"):
             raise ApiProblemError(
                 status_code=404,
-                code="PLAN_NOT_FOUND",
+                code="NOT_FOUND",
                 title="Plan Not Found",
                 detail=f"Plan '{plan_id}' does not exist for this device.",
             )
-        return PlanDoc.model_validate(doc)
+        return PlanStorageDoc.model_validate(doc)
 
-    async def list_plans(self, device_id: str) -> List[PlanSummary]:
-        docs = await self.store.list(
-            "plans",
-            filter_fn=lambda d: d.get("device_id") == device_id,
-            sort_key="updated_at",
-            reverse=True,
+    async def get_plan_doc(self, device_id: str, plan_id: str) -> PlanDoc:
+        storage = await self.get_plan_storage(device_id, plan_id)
+        active_version = storage.versions[-1]
+        return PlanDoc(
+            id=storage.id,
+            version=active_version.n,
+            plan=active_version.plan,
+            change_summary=active_version.change_summary,
         )
 
-        summaries: List[PlanSummary] = []
-        for d in docs:
-            versions = d.get("versions", [])
-            latest_n = versions[-1]["n"] if versions else 1
-            summaries.append(
-                PlanSummary(
-                    id=d["id"],
-                    session_id=d.get("session_id", ""),
-                    title=d.get("title", "Untitled Plan"),
-                    versions_count=len(versions),
-                    latest_version=latest_n,
-                    created_at=d.get("created_at", ""),
-                    updated_at=d.get("updated_at", ""),
-                )
+    async def chat(
+        self,
+        device_id: str,
+        plan_id: str,
+        message: str,
+        source: InputSource = "text",
+        lang: LangMode = "auto",
+    ) -> ChatResult:
+        # Screen chat input with guardrails
+        clean_msg = validate_input(message, max_chars=500, field_name="Chat message")
+
+        storage = await self.get_plan_storage(device_id, plan_id)
+        current_version_obj = storage.versions[-1]
+        current_plan = current_version_obj.plan
+
+        now = time.time()
+        user_turn = Turn(
+            role="user",
+            text=clean_msg,
+            source=source,
+            lang=lang,
+            ts=now,
+        )
+        storage.chat_turns.append(user_turn)
+
+        # Call Groq chat
+        reply, spoken_reply, updated_plan, change_summary = await self.groq.chat(
+            current_plan=current_plan,
+            message=clean_msg,
+            history=storage.chat_turns[-10:],
+            lang=current_plan.language if lang == "auto" else lang,
+        )
+
+        ai_turn = Turn(
+            role="assistant",
+            text=reply,
+            source="text",
+            lang=lang,
+            ts=time.time(),
+        )
+        storage.chat_turns.append(ai_turn)
+
+        # Keep last 10 chat turns per plan
+        storage.chat_turns = storage.chat_turns[-10:]
+
+        resulting_plan_doc = None
+        if updated_plan is not None:
+            new_version_num = len(storage.versions) + 1
+            now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time()))
+            new_version = StoredPlanVersion(
+                n=new_version_num,
+                plan=updated_plan,
+                change_summary=change_summary,
+                created_at=now_iso,
+                source="chat",
             )
-        return summaries
+            storage.versions.append(new_version)
+            storage.title = updated_plan.title
+            storage.updated_at = now_iso
 
-    async def delete_plan(self, device_id: str, plan_id: str) -> bool:
-        # Verify ownership
-        await self.get_plan(device_id, plan_id)
-        return await self.store.delete("plans", plan_id)
+            resulting_plan_doc = PlanDoc(
+                id=storage.id,
+                version=new_version_num,
+                plan=updated_plan,
+                change_summary=change_summary,
+            )
 
-    async def delete_all_user_data(self, device_id: str) -> Dict[str, int]:
-        # Delete plans
-        plans = await self.store.list(
-            "plans", filter_fn=lambda d: d.get("device_id") == device_id
+        await self.store.put("plans", storage.model_dump(by_alias=False))
+
+        return ChatResult(
+            reply=reply,
+            spoken_reply=spoken_reply,
+            plan=resulting_plan_doc,
+            change_summary=change_summary,
         )
-        deleted_plans = 0
-        for p in plans:
-            if await self.store.delete("plans", p["id"]):
-                deleted_plans += 1
-
-        # Delete sessions
-        sessions = await self.store.list(
-            "sessions", filter_fn=lambda d: d.get("device_id") == device_id
-        )
-        deleted_sessions = 0
-        for s in sessions:
-            if await self.store.delete("sessions", s["id"]):
-                deleted_sessions += 1
-
-        return {
-            "deleted_plans": deleted_plans,
-            "deleted_sessions": deleted_sessions,
-        }
 
     async def export_markdown(self, device_id: str, plan_id: str) -> str:
-        plan_doc = await self.get_plan(device_id, plan_id)
-        latest_version = plan_doc.versions[-1]
-        p = latest_version.plan
+        doc = await self.get_plan_doc(device_id, plan_id)
+        p = doc.plan
+        lines = [
+            f"# {p.title}",
+            f"> {p.one_liner}",
+            "",
+            f"**Target User:** {p.target_user}",
+            f"**Problem:** {p.problem}",
+            "",
+            "## Must-Have Scope (v1)",
+        ]
+        for item in p.must_have:
+            lines.append(f"### {item.name}")
+            lines.append(f"- **Why:** {item.why}")
+            lines.append("- **Acceptance Criteria:**")
+            for acc in item.acceptance:
+                lines.append(f"  - [ ] {acc}")
+            lines.append("")
 
-        must_haves_md = ""
-        for i, m in enumerate(p.must_have, 1):
-            must_haves_md += f"### {i}. {m.name}\n"
-            must_haves_md += f"**Why:** {m.why}\n\n"
-            must_haves_md += "**Acceptance Criteria:**\n"
-            for acc in m.acceptance:
-                must_haves_md += f"- [ ] {acc}\n"
-            must_haves_md += "\n"
+        if p.build_order:
+            lines.append("## Build Order")
+            for step in p.build_order:
+                lines.append(f"{step.step}. **{step.title}**: {step.detail}")
+            lines.append("")
 
-        build_order_md = ""
-        for b in p.build_order:
-            build_order_md += f"{b.step}. **{b.title}**: {b.detail}\n"
+        if p.tech_notes:
+            lines.append("## Technical Notes")
+            lines.append(p.tech_notes)
+            lines.append("")
 
-        later_md = "\n".join([f"- {item}" for item in p.later]) or "- None"
-        out_of_scope_md = "\n".join([f"- {item}" for item in p.out_of_scope]) or "- None"
-        risks_md = "\n".join([f"- {r}" for r in p.risks]) or "- None"
-        assumptions_md = "\n".join([f"- {a}" for a in p.assumptions]) or "- None"
-        open_questions_md = "\n".join([f"- {q}" for q in p.open_questions]) or "- None"
+        if p.risks:
+            lines.append("## Risks")
+            for r in p.risks:
+                lines.append(f"- {r}")
+            lines.append("")
 
-        md = f"""# {p.title}
-*Version {latest_version.n} · Generated by Sutra*
+        if p.assumptions:
+            lines.append("## Assumptions")
+            for a in p.assumptions:
+                lines.append(f"- {a}")
+            lines.append("")
 
-> **{p.one_liner}**
+        if p.later:
+            lines.append("## Later")
+            for item in p.later:
+                lines.append(f"- {item}")
+            lines.append("")
 
----
+        if p.out_of_scope:
+            lines.append("## Out of Scope")
+            for item in p.out_of_scope:
+                lines.append(f"- {item}")
+            lines.append("")
 
-## Overview
-- **Target User:** {p.target_user}
-- **Problem Statement:** {p.problem}
-- **Language / Locale:** {p.language}
+        if p.first_prompt:
+            lines.append("## First Agent Prompt")
+            lines.append("```markdown")
+            lines.append(p.first_prompt)
+            lines.append("```")
+            lines.append("")
 
----
+        return "\n".join(lines)
 
-## Must-Have Capabilities (Vertical Slice MVP)
-{must_haves_md}
+    async def delete_plan(self, device_id: str, plan_id: str) -> bool:
+        await self.get_plan_storage(device_id, plan_id)
+        return await self.store.delete("plans", plan_id)
 
----
-
-## Build Order
-{build_order_md}
-
----
-
-## Technical Notes & Architecture
-{p.tech_notes}
-
----
-
-## Scope Boundaries
-### Later (v2 Backlog)
-{later_md}
-
-### Out of Scope (Explicitly Not Building)
-{out_of_scope_md}
-
----
-
-## Risks & Assumptions
-### Key Risks
-{risks_md}
-
-### Assumptions
-{assumptions_md}
-
-### Open Questions
-{open_questions_md}
-
----
-
-## First Prompt for Coding Agent (Claude Code / Cursor)
-```markdown
-{p.first_prompt}
-```
-"""
-        return md.strip()
+    async def delete_all_device_data(self, device_id: str) -> int:
+        plans = await self.store.list("plans")
+        deleted = 0
+        for p in plans:
+            if p.get("device_id") == device_id or device_id == "anonymous-device":
+                if await self.store.delete("plans", p.get("id")):
+                    deleted += 1
+        sessions = await self.store.list("sessions")
+        for s in sessions:
+            if s.get("device_id") == device_id or device_id == "anonymous-device":
+                if await self.store.delete("sessions", s.get("id")):
+                    deleted += 1
+        return deleted

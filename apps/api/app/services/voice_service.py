@@ -50,9 +50,17 @@ class VoiceService:
         # Enforce concurrency limit: 1 active stream per device
         async with self._lock:
             if device_id in self.active_devices:
-                await websocket.close(
-                    code=1008, reason="Another voice stream is already active for this device."
-                )
+                try:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "code": "BUSY",
+                            "message": "Another voice stream is already active for this device.",
+                        }
+                    )
+                except Exception:
+                    pass
+                await websocket.close(code=1008, reason="BUSY")
                 return
             self.active_devices.add(device_id)
 
@@ -74,13 +82,13 @@ class VoiceService:
                                 try:
                                     parsed = json.loads(msg)
                                     text = parsed.get("transcript", parsed.get("text", ""))
-                                    seg_id = parsed.get("segment_id", 0)
+                                    seg_id = parsed.get("segment_id", parsed.get("segmentId", 0))
                                     detected_lang = parsed.get("detected_language_code", lang)
                                     await websocket.send_json(
                                         {
                                             "type": "transcript",
                                             "text": text,
-                                            "segment_id": seg_id,
+                                            "segmentId": seg_id,
                                             "lang": detected_lang,
                                         }
                                     )
@@ -99,6 +107,7 @@ class VoiceService:
                     await websocket.send_json(
                         {
                             "type": "error",
+                            "code": "UPSTREAM",
                             "message": f"Turn exceeded maximum duration of {max_duration} seconds.",
                         }
                     )
@@ -109,7 +118,11 @@ class VoiceService:
                     message = await asyncio.wait_for(websocket.receive(), timeout=15.0)
                 except asyncio.TimeoutError:
                     await websocket.send_json(
-                        {"type": "error", "message": "Voice stream timed out due to inactivity."}
+                        {
+                            "type": "error",
+                            "code": "UPSTREAM",
+                            "message": "Voice stream timed out due to inactivity.",
+                        }
                     )
                     break
 
@@ -130,7 +143,7 @@ class VoiceService:
                                 {
                                     "type": "transcript",
                                     "text": "Mujhe ek app chahiye jo ideas ko",
-                                    "segment_id": 1,
+                                    "segmentId": 1,
                                     "lang": "hinglish",
                                 }
                             )
@@ -142,16 +155,19 @@ class VoiceService:
                         if cmd.get("type") == "commit":
                             if upstream_ws:
                                 await upstream_ws.send(json.dumps({"type": "commit"}))
+                                # Allow brief time for upstream to finish returning transcripts
+                                await asyncio.sleep(0.3)
                             else:
                                 # Mock final transcript on commit
                                 await websocket.send_json(
                                     {
                                         "type": "transcript",
                                         "text": "Mujhe ek voice-first idea planner app banana hai jo Hinglish mein kaam kare.",
-                                        "segment_id": 2,
+                                        "segmentId": 2,
                                         "lang": "hinglish",
                                     }
                                 )
+                            await websocket.send_json({"type": "done"})
                             break
                     except json.JSONDecodeError:
                         pass

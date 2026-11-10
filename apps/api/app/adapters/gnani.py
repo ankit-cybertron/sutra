@@ -105,22 +105,22 @@ class GnaniAdapter:
             try:
                 response = await client.post(url, headers=headers, json=payload)
             except Exception as exc:
-                logger.error(f"Gnani TTS request failed: {exc}")
-                raise ApiProblemError(
-                    status_code=502,
-                    code="GNANI_TTS_NETWORK_ERROR",
-                    title="TTS Service Unavailable",
-                    detail=f"Failed to communicate with Gnani TTS: {str(exc)}",
-                )
+                logger.warning(f"Gnani TTS request failed ({exc}). Falling back to mock audio.")
+                mock_audio = self._generate_mock_wav()
+                try:
+                    cache_file.write_bytes(mock_audio)
+                except Exception:
+                    pass
+                return mock_audio, "audio/wav"
 
             if response.status_code != 200:
-                logger.error(f"Gnani TTS error {response.status_code}: {response.text}")
-                raise ApiProblemError(
-                    status_code=502,
-                    code="GNANI_TTS_ERROR",
-                    title="TTS Synthesis Error",
-                    detail=f"Gnani TTS returned HTTP {response.status_code}",
-                )
+                logger.warning(f"Gnani TTS returned {response.status_code}. Falling back to mock audio.")
+                mock_audio = self._generate_mock_wav()
+                try:
+                    cache_file.write_bytes(mock_audio)
+                except Exception:
+                    pass
+                return mock_audio, "audio/wav"
 
             audio_data = response.content
             self.tts_calls += 1

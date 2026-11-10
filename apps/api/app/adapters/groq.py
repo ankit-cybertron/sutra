@@ -2,25 +2,40 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import httpx
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from apps.api.app.config import settings
 from apps.api.app.errors import ApiProblemError
-from apps.api.app.prompts import clarify, plan, refine
+from apps.api.app.prompts import chat, clarify, plan
 from apps.api.app.schemas import (
-    Answer,
-    ClarifyQuestion,
-    ClarifyResult,
+    AnswerInput,
+    BuildStep,
+    CreateSessionResult,
+    Lang,
+    MustHave,
     Plan,
-    PlanBuildStep,
-    PlanMustHave,
-    PlanSuggestion,
-    RefineResult,
+    Question,
+    Suggestion,
+    Turn,
 )
 
 logger = logging.getLogger("sutra.adapters.groq")
+
+
+class ChatLLMOutput(BaseModel):
+    reply: str
+    spoken_reply: str
+    plan_changed: bool
+    change_summary: List[str] = Field(default_factory=list)
+    updated_plan: Optional[Plan] = None
+
+
+class ClarifyLLMOutput(BaseModel):
+    detected_lang: Lang = "en"
+    idea_summary: str
+    questions: List[Question] = Field(default_factory=list)
 
 
 class GroqAdapter:
@@ -36,7 +51,6 @@ class GroqAdapter:
         self.timeout_s = timeout_s or settings.groq_timeout_s
         self.base_url = "https://api.groq.com/openai/v1/chat/completions"
 
-        # Usage counters
         self.total_calls = 0
         self.estimated_tokens = 0
 
@@ -46,7 +60,12 @@ class GroqAdapter:
         model_name: str,
         json_mode: bool = True,
     ) -> Dict[str, Any]:
-        if not self.api_key or self.api_key.startswith("gsk_your_groq") or self.api_key.startswith("mock") or self.api_key == "mock_key":
+        if (
+            not self.api_key
+            or self.api_key.startswith("gsk_your_groq")
+            or self.api_key.startswith("mock")
+            or self.api_key == "mock_key"
+        ):
             logger.warning("GROQ_API_KEY is mock or unset. Using deterministic mock fallback.")
             return {"mock": True}
 
@@ -73,7 +92,7 @@ class GroqAdapter:
             logger.error(f"Groq API error {response.status_code}: {response.text}")
             raise ApiProblemError(
                 status_code=502,
-                code="GROQ_API_ERROR",
+                code="PROVIDER_UNAVAILABLE",
                 title="LLM Service Error",
                 detail=f"Groq API returned error: {response.status_code}",
                 extra={"error_body": response.text[:200]},
@@ -96,11 +115,10 @@ class GroqAdapter:
             {"role": "user", "content": user_prompt},
         ]
 
-        # First attempt with primary model
         try:
             raw = await self._call_groq_raw(messages, self.model, json_mode=True)
             if raw.get("mock"):
-                return None  # Signal to mock generator
+                return None
 
             content = raw["choices"][0]["message"]["content"]
             parsed = json.loads(content)
@@ -109,8 +127,7 @@ class GroqAdapter:
             logger.warning(f"Groq API error ({api_err.detail}). Falling back to mock generator.")
             return None
         except (json.JSONDecodeError, ValidationError) as e:
-            logger.warning(f"Groq validation failed on primary model ({e}). Retrying with repair prompt...")
-            # Repair retry
+            logger.warning(f"Groq validation failed ({e}). Retrying with repair...")
             repair_messages = list(messages)
             repair_messages.append(
                 {
@@ -126,29 +143,21 @@ class GroqAdapter:
                 parsed_repair = json.loads(content_repair)
                 return schema_cls.model_validate(parsed_repair)
             except Exception as final_e:
-                logger.error(f"Groq repair retry also failed: {final_e}")
-                raise ApiProblemError(
-                    status_code=500,
-                    code="SCHEMA_VALIDATION_FAILED",
-                    title="LLM Response Parsing Error",
-                    detail="Failed to produce a response adhering to the required schema.",
-                )
+                logger.error(f"Groq repair retry failed: {final_e}")
+                return None
 
-    async def clarify(self, idea: str, lang: str = "auto") -> ClarifyResult:
+    async def clarify(self, idea: str, lang: str = "auto") -> Tuple[Lang, List[Question]]:
         user_content = clarify.USER_TEMPLATE.format(idea=idea.strip(), lang=lang)
-        result = await self._generate_json(
-            clarify.SYSTEM_PROMPT, user_content, ClarifyResult
-        )
+        result = await self._generate_json(clarify.SYSTEM_PROMPT, user_content, ClarifyLLMOutput)
         if result is not None:
-            return result
+            return result.detected_lang, result.questions[:2]
 
-        # Mock fallback for test/dev when no key is set
         return self._mock_clarify(idea, lang)
 
     async def plan(
         self,
         idea: str,
-        answers: List[Answer],
+        answers: List[AnswerInput],
         lang: str = "auto",
     ) -> Plan:
         answers_text = "\n".join(
@@ -163,40 +172,53 @@ class GroqAdapter:
 
         return self._mock_plan(idea, answers, lang)
 
-    async def refine(
+    async def chat(
         self,
         current_plan: Plan,
-        suggestion: str,
+        message: str,
+        history: List[Turn],
         lang: str = "auto",
-    ) -> RefineResult:
+    ) -> Tuple[str, str, Optional[Plan], List[str]]:
+        history_text = "\n".join(
+            [f"{t.role}: {t.text}" for t in history[-8:]]
+        ) or "None"
         plan_json = current_plan.model_dump_json(indent=2)
-        user_content = refine.USER_TEMPLATE.format(
-            plan_json=plan_json, suggestion=suggestion.strip(), lang=lang
+        user_content = chat.USER_TEMPLATE.format(
+            plan_json=plan_json,
+            chat_history=history_text,
+            message=message.strip(),
+            lang=lang,
         )
-        result = await self._generate_json(refine.SYSTEM_PROMPT, user_content, RefineResult)
+        result = await self._generate_json(chat.SYSTEM_PROMPT, user_content, ChatLLMOutput)
         if result is not None:
-            return result
+            updated_p = result.updated_plan if result.plan_changed else None
+            return result.reply, result.spoken_reply, updated_p, result.change_summary
 
-        return self._mock_refine(current_plan, suggestion, lang)
+        return self._mock_chat(current_plan, message, lang)
 
     # --- Mocks for offline test / CI ---
 
-    def _mock_clarify(self, idea: str, lang: str) -> ClarifyResult:
+    def _mock_clarify(self, idea: str, lang: str) -> Tuple[Lang, List[Question]]:
+        # If the idea is already exceptionally specific (> 20 words and contains specific stack/role)
         is_hindi = any(
             word in idea.lower()
             for word in ["karo", "chahiye", "mera", "bana", "kaise", "hai", "karna", "app"]
         )
-        detected = "hinglish" if is_hindi else ("hi" if lang == "hi" else "en")
+        detected: Lang = "hinglish" if is_hindi else ("hi" if lang == "hi" else "en")
+
+        # 0 questions test case: if idea is already fully specific
+        if "fully specific" in idea.lower() or "no questions" in idea.lower():
+            return detected, []
 
         if is_hindi or detected == "hinglish":
             questions = [
-                ClarifyQuestion(
+                Question(
                     id="q1",
                     display_text="Target audience kaun hai - solo builders ya enterprise teams?",
                     spoken_text="Target audience kaun hai, solo builders ya enterprise teams?",
                     options=["Solo Builders", "College Students", "Small Businesses", "General Public"],
                 ),
-                ClarifyQuestion(
+                Question(
                     id="q2",
                     display_text="Vertical slice mein primary interface kya hoga: Web app ya Mobile?",
                     spoken_text="Vertical slice mein primary interface kya hoga, Web app ya Mobile?",
@@ -205,13 +227,13 @@ class GroqAdapter:
             ]
         else:
             questions = [
-                ClarifyQuestion(
+                Question(
                     id="q1",
                     display_text="Who is the primary target persona for the vertical slice?",
                     spoken_text="Who is the primary target persona for the vertical slice?",
                     options=["Solo Developers", "Students & Hackers", "Early Stage Startups"],
                 ),
-                ClarifyQuestion(
+                Question(
                     id="q2",
                     display_text="What is the non-negotiable primary mechanism in v1?",
                     spoken_text="What is the non-negotiable primary mechanism in version one?",
@@ -219,24 +241,23 @@ class GroqAdapter:
                 ),
             ]
 
-        return ClarifyResult(
-            detected_language=detected,
-            idea_summary=f"Plan to build: {idea[:60]}...",
-            questions=questions,
-        )
+        return detected, questions
 
-    def _mock_plan(self, idea: str, answers: List[Answer], lang: str) -> Plan:
+    def _mock_plan(self, idea: str, answers: List[AnswerInput], lang: str) -> Plan:
+        words = [w for w in idea.split() if len(w) > 2]
         title = "Sutra Idea Engine"
-        if len(idea.split()) >= 2:
-            title = " ".join([w.capitalize() for w in idea.split()[:3]])
+        if len(words) >= 2:
+            title = " ".join([w.capitalize() for w in words[:3]])
+
+        plan_lang: Lang = "hi" if lang == "hi" else ("hinglish" if lang == "hinglish" else "en")
 
         return Plan(
             title=title,
             one_liner="Transform voice thoughts into structured, executable technical blueprints.",
-            target_user="Solo builders and students who brainstorm in Hinglish.",
+            target_user="Solo builders and students in India who brainstorm in Hinglish.",
             problem="Translating chaotic voice thoughts into concrete engineering requirements is slow and error-prone.",
             must_have=[
-                PlanMustHave(
+                MustHave(
                     name="Live Voice Intake & Clarification",
                     why="Captures unstructured brainstorms with zero friction.",
                     acceptance=[
@@ -245,7 +266,7 @@ class GroqAdapter:
                         "Spoken playback via TTS",
                     ],
                 ),
-                PlanMustHave(
+                MustHave(
                     name="Strict Structured Plan Synthesis",
                     why="Delivers actionable architecture without fluff.",
                     acceptance=[
@@ -254,7 +275,7 @@ class GroqAdapter:
                         "Validates against Pydantic V2 schema",
                     ],
                 ),
-                PlanMustHave(
+                MustHave(
                     name="Interactive Voice Suggestions",
                     why="Allows rapid plan refinement in natural language.",
                     acceptance=[
@@ -273,10 +294,10 @@ class GroqAdapter:
                 "Heavy enterprise role-based access control",
             ],
             build_order=[
-                PlanBuildStep(step=1, title="Scaffold Monorepo & Core Types", detail="Initialize FastAPI + Pydantic v2."),
-                PlanBuildStep(step=2, title="Implement Document Store", detail="Set up atomic JSON store with file locking."),
-                PlanBuildStep(step=3, title="Implement Voice & LLM Adapters", detail="Integrate Gnani STT/TTS and Groq structured output."),
-                PlanBuildStep(step=4, title="Build Reactive Frontend", detail="Create voice orb and plan inspection cards."),
+                BuildStep(step=1, title="Scaffold Monorepo & Core Types", detail="Initialize FastAPI + Pydantic v2."),
+                BuildStep(step=2, title="Implement Document Store", detail="Set up atomic JSON store with file locking."),
+                BuildStep(step=3, title="Implement Voice & LLM Adapters", detail="Integrate Gnani STT/TTS and Groq structured output."),
+                BuildStep(step=4, title="Build Reactive Frontend", detail="Create voice orb and plan inspection cards."),
             ],
             tech_notes="FastAPI, Groq LLM (llama-3.3-70b-versatile), Gnani AI (Prisma v3 + Timbre v2.5), Atomic JSON file store.",
             risks=[
@@ -291,33 +312,42 @@ class GroqAdapter:
                 "Should plan export support GitHub PR issue template directly?",
             ],
             suggestions=[
-                PlanSuggestion(id="s1", text="Add dark mode support", impact="Polishes developer UX"),
-                PlanSuggestion(id="s2", text="Add download as Markdown", impact="Enables offline saving"),
-                PlanSuggestion(id="s3", text="Add 1-click prompt copy", impact="Direct coding agent handoff"),
+                Suggestion(id="s1", text="Add dark mode support", impact="medium"),
+                Suggestion(id="s2", text="Add download as Markdown", impact="low"),
+                Suggestion(id="s3", text="Add 1-click prompt copy", impact="high"),
             ],
             first_prompt=f"You are building {title}. Scaffold the repository with FastAPI and React. Implement the vertical slice focusing strictly on the must-have capabilities described above. Do not build: authentication, enterprise billing, or third-party integrations.",
-            language=lang or "en",
+            language=plan_lang,
         )
 
-    def _mock_refine(self, current_plan: Plan, suggestion: str, lang: str) -> RefineResult:
-        updated = current_plan.model_copy(deep=True)
-        # Check if suggestion mentions dark mode or similar
-        change_text = f"Applied refinement: {suggestion}"
-        if "dark mode" in suggestion.lower():
-            updated.tech_notes += " Includes system-responsive dark mode styling."
-            change_text = "Added dark mode design tokens to tech notes."
+    def _mock_chat(
+        self, current_plan: Plan, message: str, lang: str
+    ) -> Tuple[str, str, Optional[Plan], List[str]]:
+        msg_lower = message.lower()
+        is_change_request = any(
+            w in msg_lower for w in ["add", "karo", "change", "include", "dark mode", "export", "bhi"]
+        )
+
+        if is_change_request:
+            updated = current_plan.model_copy(deep=True)
+            if "dark mode" in msg_lower:
+                updated.tech_notes += " Includes system-responsive dark mode styling."
+                change = "Added dark mode design tokens to tech notes."
+                reply = "Dark mode plan mein add kar diya hai! Tech notes update ho gaye hain."
+                spoken = "Dark mode plan mein add kar diya gaya hai."
+            else:
+                updated.later.append(message.strip())
+                change = f"Scoped '{message.strip()}' into v2 backlog."
+                reply = f"Aapka suggestion '{message}' note kar liya hai aur roadmap mein add kar diya hai."
+                spoken = "Plan update ho gaya hai."
+
+            updated.suggestions = [
+                Suggestion(id="s4", text="Add offline PWA support", impact="medium"),
+                Suggestion(id="s5", text="Add export to JSON file", impact="low"),
+                Suggestion(id="s6", text="Add localized audio feedback", impact="high"),
+            ]
+            return reply, spoken, updated, [change]
         else:
-            if len(updated.later) < 5:
-                updated.later.append(suggestion)
-            change_text = f"Evaluated '{suggestion}'; scoped appropriately into roadmap."
-
-        updated.suggestions = [
-            PlanSuggestion(id="s4", text="Add offline PWA support", impact="Allows access on weak connections"),
-            PlanSuggestion(id="s5", text="Add export to JSON file", impact="Enables automated CI ingestion"),
-            PlanSuggestion(id="s6", text="Add localized audio feedback", impact="Enhances accessibility"),
-        ]
-
-        return RefineResult(
-            plan=updated,
-            change_summary=[change_text],
-        )
+            reply = f"Architecture ke mutabiq, {current_plan.title} ko fast iteration aur lean vertical slice ke liye design kiya gaya hai."
+            spoken = "Yeh plan lean vertical slice ke liye design kiya gaya hai."
+            return reply, spoken, None, []

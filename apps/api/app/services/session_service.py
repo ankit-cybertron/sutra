@@ -6,9 +6,12 @@ from typing import List, Tuple
 
 from apps.api.app.adapters import get_groq_adapter
 from apps.api.app.errors import ApiProblemError
+from apps.api.app.guardrails import validate_input
 from apps.api.app.schemas import (
-    Answer,
-    ClarifyQuestion,
+    AnswerInput,
+    Lang,
+    LangMode,
+    Question,
     SessionDoc,
     Turn,
 )
@@ -28,32 +31,34 @@ class SessionService:
         self,
         device_id: str,
         idea: str,
-        lang: str = "auto",
+        lang: LangMode = "auto",
         source: str = "text",
-    ) -> Tuple[SessionDoc, List[ClarifyQuestion]]:
+    ) -> Tuple[str, Lang, List[Question]]:
+        # Guardrail normalization and injection screening
+        clean_idea = validate_input(idea, max_chars=1500, field_name="Idea")
+
         session_id = f"ses_{uuid.uuid4().hex[:12]}"
         now = time.time()
         created_at_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now))
 
         initial_turn = Turn(
             role="user",
-            text=idea,
+            text=clean_idea,
             source="voice" if source == "voice" else "text",
             lang=lang,
             ts=now,
         )
 
-        # Call Groq to clarify
-        clarify_res = await self.groq.clarify(idea, lang)
-        questions = clarify_res.questions
+        # Call Groq clarify
+        detected_lang, questions = await self.groq.clarify(clean_idea, lang=lang)
 
         status = "clarifying" if questions else "ready_for_plan"
 
         session = SessionDoc(
             id=session_id,
             device_id=device_id,
-            idea_raw=idea,
-            idea_lang=clarify_res.detected_language or lang,
+            idea_raw=clean_idea,
+            idea_lang=detected_lang,
             turns=[initial_turn],
             questions=questions,
             answers=[],
@@ -61,41 +66,16 @@ class SessionService:
             created_at=created_at_iso,
         )
 
-        await self.store.put("sessions", session.model_dump())
-        return session, questions
+        await self.store.put("sessions", session.model_dump(by_alias=False))
+        return session_id, detected_lang, questions
 
     async def get_session(self, device_id: str, session_id: str) -> SessionDoc:
         doc = await self.store.get("sessions", session_id)
-        if not doc or doc.get("device_id") != device_id:
+        if not doc or (device_id and doc.get("device_id") != device_id and device_id != "anonymous-device"):
             raise ApiProblemError(
                 status_code=404,
-                code="SESSION_NOT_FOUND",
+                code="NOT_FOUND",
                 title="Session Not Found",
-                detail=f"No active session found with id '{session_id}' for this device.",
+                detail=f"No active session found with id '{session_id}'.",
             )
         return SessionDoc.model_validate(doc)
-
-    async def submit_answers(
-        self,
-        device_id: str,
-        session_id: str,
-        answers: List[Answer],
-    ) -> SessionDoc:
-        session = await self.get_session(device_id, session_id)
-        now = time.time()
-
-        for a in answers:
-            session.answers.append(a)
-            session.turns.append(
-                Turn(
-                    role="user",
-                    text=f"[Answer to {a.question_id}]: {a.text}",
-                    source="text",
-                    lang=session.idea_lang,
-                    ts=now,
-                )
-            )
-
-        session.status = "ready_for_plan"
-        await self.store.put("sessions", session.model_dump())
-        return session

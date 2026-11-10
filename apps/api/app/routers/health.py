@@ -11,6 +11,7 @@ router = APIRouter(prefix="/api", tags=["Health"])
 @router.get("/health")
 async def health_check() -> Dict[str, Any]:
     return {
+        "ok": True,
         "status": "ok",
         "app": settings.brand.name,
         "tagline": settings.brand.tagline,

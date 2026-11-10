@@ -1,71 +1,50 @@
-"""Plan endpoints: Viewing, refining, version history, deletion, and markdown export."""
+"""Plan endpoints: Viewing, chat refinements, version history, deletion, and markdown export."""
 
 from typing import Any, Dict
 from fastapi import APIRouter, Depends, Response
-from apps.api.app.dependencies import get_device_id, plan_rate_limiter, standard_rate_limiter
+from apps.api.app.dependencies import get_device_id, chat_rate_limiter, standard_rate_limiter
 from apps.api.app.schemas import (
-    PlanDetailResponse,
-    PlanListResponse,
-    RefinePlanRequest,
-    RefinePlanResponse,
+    ChatInput,
+    ChatResult,
+    PlanDoc,
 )
 from apps.api.app.services import get_plan_service
 
 router = APIRouter(prefix="/api", tags=["Plans"])
 
 
-@router.get("/plans", response_model=PlanListResponse)
-async def list_plans(
-    device_id: str = Depends(get_device_id),
-) -> PlanListResponse:
-    plan_service = get_plan_service()
-    plans = await plan_service.list_plans(device_id=device_id)
-    return PlanListResponse(plans=plans)
-
-
-@router.get("/plans/{plan_id}", response_model=PlanDetailResponse)
+@router.get(
+    "/plans/{plan_id}",
+    response_model=PlanDoc,
+    response_model_by_alias=True,
+)
 async def get_plan(
     plan_id: str,
     device_id: str = Depends(get_device_id),
-) -> PlanDetailResponse:
+) -> PlanDoc:
     plan_service = get_plan_service()
-    plan_doc = await plan_service.get_plan(device_id=device_id, plan_id=plan_id)
-    current_version_obj = plan_doc.versions[-1]
-
-    return PlanDetailResponse(
-        id=plan_doc.id,
-        device_id=plan_doc.device_id,
-        session_id=plan_doc.session_id,
-        title=plan_doc.title,
-        versions=plan_doc.versions,
-        current_version=current_version_obj.n,
-        plan=current_version_obj.plan,
-        created_at=plan_doc.created_at,
-        updated_at=plan_doc.updated_at,
-    )
+    return await plan_service.get_plan_doc(device_id=device_id, plan_id=plan_id)
 
 
 @router.post(
-    "/plans/{plan_id}/refine",
-    response_model=RefinePlanResponse,
-    dependencies=[Depends(plan_rate_limiter)],
+    "/plans/{plan_id}/chat",
+    response_model=ChatResult,
+    response_model_by_alias=True,
+    response_model_exclude_none=True,
+    dependencies=[Depends(chat_rate_limiter)],
 )
-async def refine_plan(
+async def chat_plan(
     plan_id: str,
-    payload: RefinePlanRequest,
+    payload: ChatInput,
     device_id: str = Depends(get_device_id),
-) -> RefinePlanResponse:
+) -> ChatResult:
     plan_service = get_plan_service()
-    _, version_num, plan, change_summary = await plan_service.refine_plan(
+    return await plan_service.chat(
         device_id=device_id,
         plan_id=plan_id,
-        suggestion=payload.suggestion,
-        source=payload.source or "text",
-    )
-    return RefinePlanResponse(
-        version=version_num,
-        plan=plan,
-        change_summary=change_summary,
+        message=payload.message,
+        source=payload.source,
+        lang=payload.lang,
     )
 
 
@@ -99,11 +78,6 @@ async def export_plan_markdown(
 async def delete_all_user_data(
     device_id: str = Depends(get_device_id),
 ) -> Dict[str, Any]:
-    """Delete all sessions and plans associated with requesting device."""
     plan_service = get_plan_service()
-    result = await plan_service.delete_all_user_data(device_id=device_id)
-    return {
-        "status": "ok",
-        "message": "All device data successfully deleted.",
-        **result,
-    }
+    deleted_count = await plan_service.delete_all_device_data(device_id=device_id)
+    return {"ok": True, "deletedCount": deleted_count}

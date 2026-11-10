@@ -16,7 +16,7 @@ venv/
 ENV/
 build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
@@ -40,7 +40,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 apps/web/.next/
-!apps/web/dist/index.html
+test-results/
+apps/web/test-results/
+!apps/web/dist/**
 
 # Data & Runtime
 data/

@@ -13,6 +13,12 @@ import apps.api.app.store as store_module
 import apps.api.app.adapters as adapters_module
 from apps.api.app.adapters.gnani import GnaniAdapter
 from apps.api.app.adapters.groq import GroqAdapter
+from apps.api.app.dependencies import (
+    _minute_buckets,
+    _daily_buckets,
+    _blocked_attempts,
+    _banned_until,
+)
 
 
 @pytest.fixture
@@ -39,8 +45,18 @@ def override_settings_and_store(temp_dir):
     adapters_module._gnani_instance = test_gnani
     adapters_module._groq_instance = test_groq
 
+    # Reset rate limit buckets for clean test runs
+    _minute_buckets.clear()
+    _daily_buckets.clear()
+    _blocked_attempts.clear()
+    _banned_until.clear()
+
     yield
 
+    _minute_buckets.clear()
+    _daily_buckets.clear()
+    _blocked_attempts.clear()
+    _banned_until.clear()
     store_module._store_instance = None
     adapters_module._gnani_instance = None
     adapters_module._groq_instance = None
