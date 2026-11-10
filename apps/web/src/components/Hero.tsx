@@ -33,8 +33,8 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
       <div className="hero-grid" aria-hidden="true" />
       <div className="hero-inner">
         <h1 className="h1">
-          <span>{t(lang, "h1a")}</span>
-          <em>{t(lang, "h1b")}</em>
+          <span className="h1-main">{t(lang, "h1a")}</span>{" "}
+          <span className="h1-accent">{t(lang, "h1b")}</span>
         </h1>
         <p className="hero-sub">{t(lang, "sub")}</p>
         <p className="hero-aud">{t(lang, "audience")}</p>

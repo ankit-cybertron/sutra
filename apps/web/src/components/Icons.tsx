@@ -129,6 +129,12 @@ export const IconLayers = (p: IconProps) => (
   </Svg>
 );
 
+export const IconChevron = (p: IconProps) => (
+  <Svg {...p}>
+    <polyline points="6 9 12 15 18 9" />
+  </Svg>
+);
+
 export const IconRefresh = (p: IconProps) => (
   <Svg {...p}>
     <path d="M23 4v6h-6M1 20v-6h6" />

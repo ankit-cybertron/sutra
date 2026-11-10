@@ -41,16 +41,18 @@ export function HowItWorks() {
             >
               <IconPlay size={26} />
             </a>
-            <div className="video-demo-meta">
-              <div className="video-tag-row">
-                <span className="video-badge">Walkthrough</span>
-                <span className="video-duration">03:12</span>
-              </div>
-              <h3 className="video-title">Sutra Product Demo: Voice-to-Plan in Action</h3>
-              <p className="video-desc">
-                Real-time Indic speech recognition via Gnani AI, Groq plan synthesis, and live conversational revisions.
-              </p>
+          </div>
+        </div>
+        <div className="video-demo-bar">
+          <div className="video-demo-bar-meta">
+            <div className="video-tag-row">
+              <span className="video-badge">Walkthrough</span>
+              <span className="video-duration">03:12</span>
             </div>
+            <h3 className="video-title">Sutra Product Demo: Voice to Plan in Action</h3>
+            <p className="video-desc" style={{ textWrap: "pretty" }}>
+              Real time Indic speech recognition via Gnani AI, Groq plan synthesis, and live conversational revisions.
+            </p>
           </div>
         </div>
       </div>
@@ -70,44 +72,44 @@ const FEATURES: Feature[] = [
   {
     icon: <IconMic />,
     title: "Voice that never waits",
-    sub: "The mic is already on.",
-    body: "Speak the moment the page loads. Sutra listens on every step, in Hindi, Hinglish or English, with no push-to-talk.",
-    detail: "Streaming speech recognition by Gnani AI Prisma. Audio is used for transcription only and is never stored.",
+    sub: "The mic is always listening.",
+    body: "Speak the moment the page loads. Sutra listens on every step in Hindi, Hinglish, or English with zero push to talk friction.",
+    detail: "Streaming speech recognition by Gnani AI Prisma. Audio is used for real time transcription only and is never stored.",
   },
   {
     icon: <IconHelp />,
     title: "Questions that matter",
     sub: "One or two, never twenty.",
-    body: "Sutra asks only what would change what you build, in your own language, and reads each question out loud so you can just answer.",
-    detail: "Skip any question by saying “skip” or “chhodo”. Unanswered gaps become visible assumptions.",
+    body: "Sutra asks only what would change what you build, in your own language, and reads each question aloud so you can answer seamlessly.",
+    detail: "Skip any question by saying “skip” or “chhodo”. Unanswered gaps become transparent visible assumptions.",
   },
   {
     icon: <IconTarget />,
-    title: "Scoped plans",
+    title: "Scoped blueprints",
     sub: "Small enough to ship.",
-    body: "A short must-have list with acceptance criteria, a build order, and an explicit list of what is not in version one.",
-    detail: "Anything that would blow the scope is parked under Later, with the reason written next to it.",
+    body: "A constrained must haves list with acceptance criteria, a build order, and an explicit list of what is not in version one.",
+    detail: "Anything that would blow the scope is parked under Later with the architectural reason documented beside it.",
   },
   {
     icon: <IconChat />,
     title: "Talk to your plan",
     sub: "Change it by speaking.",
-    body: "Say “add dark mode” or ask “why is this later?”. Sutra answers, updates the plan and tells you exactly what changed.",
-    detail: "Every change creates a new version, so nothing is lost.",
+    body: "Say “add dark mode” or ask “why is this later?”. Sutra answers, updates the plan, and tells you exactly what changed.",
+    detail: "Every change creates a new version with an automatic diff summary so nothing is lost.",
   },
   {
     icon: <IconTerminal />,
-    title: "Hand-off to your coding agent",
+    title: "Handoff to your coding agent",
     sub: "Copy, paste, build.",
-    body: "Export clean Markdown plus a self-contained first prompt for Antigravity, Cursor or Claude Code, ending with a do-not-build list.",
-    detail: "One click to copy the plan or the first prompt, or download it as a file.",
+    body: "Export clean Markdown plus a self contained prompt for Antigravity, Cursor, or Claude Code with explicit out of scope boundaries.",
+    detail: "One tap copies the plan or first prompt, or downloads the complete specification file.",
   },
   {
     icon: <IconLock />,
     title: "Private and protected",
     sub: "No account, no tracking.",
-    body: "No sign-up. Your idea is checked for abuse and prompt-injection before it reaches the model, and requests are rate limited.",
-    detail: "Plans are stored on this device's anonymous id only. Delete a plan at any time.",
+    body: "Zero sign up required. Your idea is sanitized for security before it reaches the model, and requests are rate limited.",
+    detail: "Plans are stored locally on your device with anonymous session storage. Delete a plan at any time.",
   },
 ];
 

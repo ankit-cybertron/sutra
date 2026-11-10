@@ -59,7 +59,8 @@ class GnaniAdapter:
     def _get_cache_path(self, text: str, voice: str, lang: str) -> Path:
         key = f"{text.strip()}:{voice}:{lang}".encode("utf-8")
         digest = hashlib.sha256(key).hexdigest()
-        return self.cache_dir / f"{digest}.mp3"
+        ext = "wav" if self.is_mock else "mp3"
+        return self.cache_dir / f"{digest}.{ext}"
 
     async def synthesize(
         self,
@@ -73,16 +74,16 @@ class GnaniAdapter:
         )
         cache_file = self._get_cache_path(text, selected_voice, lang)
 
-        # 1. Check disk cache (only return real audio, never mock WAV)
+        # 1. Check disk cache
         if cache_file.exists():
             try:
                 audio_bytes = cache_file.read_bytes()
-                if audio_bytes.startswith(b"RIFF"):
-                    # Stale mock file in cache; remove it
+                if not self.is_mock and audio_bytes.startswith(b"RIFF"):
+                    # Stale mock file in cache in live mode; remove it
                     cache_file.unlink(missing_ok=True)
                 else:
                     self.tts_cache_hits += 1
-                    return audio_bytes, "audio/mpeg"
+                    return audio_bytes, "audio/wav" if self.is_mock else "audio/mpeg"
             except Exception as e:
                 logger.warning(f"Error reading TTS cache file: {e}")
 
@@ -91,6 +92,10 @@ class GnaniAdapter:
             self.tts_calls += 1
             self.tts_chars += len(text)
             mock_audio = self._generate_mock_wav()
+            try:
+                cache_file.write_bytes(mock_audio)
+            except Exception as e:
+                logger.warning(f"Failed to write mock TTS cache file: {e}")
             return mock_audio, "audio/wav"
 
         # 3. Call Gnani Timbre REST endpoint

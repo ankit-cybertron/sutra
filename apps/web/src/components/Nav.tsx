@@ -31,8 +31,9 @@ export function Nav({ lang, onLang, inWorkspace, onNewIdea, onStartSpeaking, gro
   const links = inWorkspace ? null : (
     <>
       <a href="#how" onClick={() => setOpen(false)}>{t(lang, "navHow")}</a>
-      <a href="#examples" onClick={() => setOpen(false)}>{t(lang, "navExamples")}</a>
       <a href="#features" onClick={() => setOpen(false)}>{t(lang, "navFeatures")}</a>
+      <a href="#examples" onClick={() => setOpen(false)}>{t(lang, "navExamples")}</a>
+      <a href="#faq" onClick={() => setOpen(false)}>FAQ</a>
     </>
   );
 

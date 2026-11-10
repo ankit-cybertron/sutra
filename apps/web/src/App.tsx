@@ -23,6 +23,9 @@ import { Nav } from "./components/Nav";
 import { Notice, type NoticeState } from "./components/Notice";
 import { PlanCard } from "./components/PlanCard";
 import { Features, HowItWorks } from "./components/Sections";
+import { TaglineReveal } from "./components/TaglineReveal";
+import { FAQ } from "./components/FAQ";
+import { FinalCta } from "./components/FinalCta";
 import { IconAlert, IconClose } from "./components/Icons";
 import { useCountdown } from "./hooks/useCountdown";
 import { useStateRef } from "./hooks/useStateRef";
@@ -500,9 +503,21 @@ export default function App() {
               gate={gateEl}
               notice={noticeEl}
             />
+            <TaglineReveal />
+            <Features />
             <HowItWorks />
             <DemoBlock />
-            <Features />
+            <FAQ />
+            <FinalCta
+              onStartVoice={() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                startSpeaking();
+              }}
+              onTrySample={() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                setIdea("Doctor clinic slot booking and patient reminders on WhatsApp");
+              }}
+            />
           </>
         )}
 
