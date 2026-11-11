@@ -56,6 +56,11 @@ data/
 *.mp3
 *.wav
 
+# Media & assets
+*.mp4
+youtube_*.png
+apps/web/public/youtube_*.png
+
 # OS
 .DS_Store
 Thumbs.db
