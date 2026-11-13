@@ -69,3 +69,4 @@ apps/web/public/youtube_*.png
 # OS
 .DS_Store
 Thumbs.db
+*.webm
