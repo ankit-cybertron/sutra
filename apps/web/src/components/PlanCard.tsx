@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "motion/react";
 import type { Lang, PlanDoc } from "../api/types";
 import { BRAND } from "../brand";
 import { t } from "../lib/i18n";
@@ -51,7 +52,13 @@ export function PlanCard({ doc, lang }: Props) {
   };
 
   return (
-    <article className="plan" aria-label={plan.title}>
+    <motion.article
+      className="plan"
+      aria-label={plan.title}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    >
       <header className="plan-head">
         <span className="dot" aria-hidden="true" />
         <span className="plan-id">
@@ -59,7 +66,7 @@ export function PlanCard({ doc, lang }: Props) {
         </span>
         <div className="plan-badges">
           <span className="plan-readiness" title="Agent build readiness score">
-            READINESS {plan.readinessScore || 92}/100
+            READINESS {plan.readinessScore || 0}/100
           </span>
           <span className="plan-ver">{t(lang, "version", { n: doc.version })}</span>
         </div>
@@ -198,6 +205,6 @@ export function PlanCard({ doc, lang }: Props) {
           <IconDownload size={16} /> {t(lang, "downloadMd")}
         </button>
       </footer>
-    </article>
+    </motion.article>
   );
 }

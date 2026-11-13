@@ -7,6 +7,8 @@ import { Logo } from "./Logo";
 interface Props {
   lang: Lang;
   onLang: (l: Lang) => void;
+  theme: string;
+  onTheme: (t: string) => void;
   inWorkspace: boolean;
   onNewIdea: () => void;
   onStartSpeaking: () => void;
@@ -14,7 +16,7 @@ interface Props {
   gnaniStatus?: { status: string; mode?: string; lastError?: string | null };
 }
 
-export function Nav({ lang, onLang, inWorkspace, onNewIdea, onStartSpeaking, groqStatus, gnaniStatus }: Props) {
+export function Nav({ lang, onLang, theme, onTheme, inWorkspace, onNewIdea, onStartSpeaking, groqStatus, gnaniStatus }: Props) {
   const [open, setOpen] = useState(false);
 
   const isGroqOk = groqStatus?.status === "connected";
@@ -75,6 +77,21 @@ export function Nav({ lang, onLang, inWorkspace, onNewIdea, onStartSpeaking, gro
                 {LANG_LABEL[l]}
               </button>
             ))}
+          </div>
+
+          <div className="theme-selector-wrap" aria-label="Theme">
+            <select
+              className="theme-select"
+              value={theme}
+              onChange={(e) => onTheme(e.target.value)}
+              aria-label="Select design theme"
+            >
+              <option value="carnival">🎪 Carnival (Chunky)</option>
+              <option value="brutal">⬛ Brutal (Raw)</option>
+              <option value="sticker">🏷️ Sticker (Die-Cut)</option>
+              <option value="werkstatt">📐 Werkstatt (Grid)</option>
+              <option value="dark">🌙 Dark (Midnight)</option>
+            </select>
           </div>
           {inWorkspace ? (
             <button type="button" className="btn btn-light btn-sm" onClick={onNewIdea}>

@@ -1,0 +1,219 @@
+:root {
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem; --text-3xl: 2.441rem;
+  --text-display-s: clamp(2.25rem, 4vw + 0.5rem, 3.75rem); --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem); --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 80px; --section-gap: 120px; --section-gap-l: 160px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  --nav-h: 68px;
+
+  /* Default Theme: Carnival (Neo-Print Warm Light with Hard 4px Ink Shadows) */
+  --color-paper: oklch(93.5% 0.038 55);
+  --color-paper-2: oklch(97.5% 0.015 65);
+  --color-paper-3: oklch(89.5% 0.045 50);
+  --color-ink: oklch(18% 0.065 25);
+  --color-ink-2: oklch(30% 0.050 30);
+  --color-muted: oklch(48% 0.040 35);
+  --color-rule: oklch(18% 0.065 25);
+  --color-rule-subtle: oklch(80% 0.035 50);
+  --color-accent: oklch(84% 0.18 85);
+  --color-accent-ink: oklch(18% 0.065 25);
+  --color-focus: oklch(40% 0.21 25);
+  --color-error: oklch(52% 0.22 25);
+  --color-success: oklch(62% 0.17 145);
+
+  --font-display: "Big Shoulders Display", Impact, sans-serif;
+  --font-body: "Golos Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-outlier: var(--font-body);
+
+  --radius-sm: 2px;
+  --radius-card: 4px;
+  --radius-lg: 6px;
+  --radius-pill: 999px;
+  --border-w: 2.5px;
+  --rule-hair: 1.5px;
+  --shadow-card: 4px 4px 0px var(--color-ink);
+  --shadow-btn: 3px 3px 0px var(--color-ink);
+  --tracking-display: 0.015em;
+
+  /* Brand semantic mappings */
+  --bg: var(--color-paper);
+  --surface: var(--color-paper-2);
+  --surface-2: var(--color-paper-3);
+  --surface-3: oklch(85% 0.045 50);
+  --line: var(--color-rule-subtle);
+  --line-2: var(--color-rule);
+  --border-light: var(--color-rule-subtle);
+  --ink: var(--color-ink);
+  --ink-1: var(--color-ink);
+  --ink-2: var(--color-ink-2);
+  --ink-3: var(--color-muted);
+  --ink-dim: oklch(52% 0.035 35);
+  --btn-light: oklch(48% 0.22 28);
+  --btn-light-ink: oklch(98% 0.005 50);
+  --btn-light-hover: oklch(42% 0.24 28);
+  --btn-disabled-bg: oklch(88% 0.02 50);
+  --btn-disabled-ink: oklch(35% 0.02 50);
+  --ok: var(--color-success);
+  --warn: oklch(72% 0.17 80);
+  --danger: var(--color-error);
+  --focus: var(--color-focus);
+  --dot: oklch(80% 0.04 50);
+  --r-sm: var(--radius-sm);
+  --r-md: var(--radius-card);
+  --r-lg: var(--radius-lg);
+  --content: min(1440px, 94vw);
+
+  /* Overlays & status badges */
+  --ok-bg: oklch(62% 0.17 145 / 0.15);
+  --ok-border: oklch(62% 0.17 145 / 0.5);
+  --ok-glow: oklch(62% 0.17 145 / 0.3);
+  --warn-bg: oklch(72% 0.17 80 / 0.15);
+  --warn-border: oklch(72% 0.17 80 / 0.5);
+  --danger-bg: oklch(52% 0.22 25 / 0.15);
+  --danger-border: oklch(52% 0.22 25 / 0.5);
+  --info-accent: oklch(50% 0.20 250);
+  --info-accent-ink: oklch(98% 0.005 250);
+  --info-accent-hover: oklch(42% 0.22 250);
+  --info-accent-bg: oklch(50% 0.20 250 / 0.12);
+  --info-accent-border: oklch(50% 0.20 250 / 0.4);
+  --banner-grad-start: oklch(52% 0.22 25 / 0.15);
+  --banner-grad-end: oklch(72% 0.17 80 / 0.15);
+  --banner-ink: var(--color-ink);
+  --white-alpha-03: oklch(18% 0.065 25 / 0.03);
+  --white-alpha-06: oklch(18% 0.065 25 / 0.06);
+  --white-alpha-08: oklch(18% 0.065 25 / 0.08);
+  --white-alpha-12: oklch(18% 0.065 25 / 0.12);
+  --white-alpha-15: oklch(18% 0.065 25 / 0.15);
+  --white-alpha-25: oklch(18% 0.065 25 / 0.25);
+  --black-alpha-45: oklch(0% 0 0 / 0.45);
+  --black-alpha-70: oklch(0% 0 0 / 0.7);
+  --black-alpha-85: oklch(0% 0 0 / 0.85);
+  --black-alpha-90: oklch(0% 0 0 / 0.9);
+}
+
+/* Theme 1: Brutal (Neo-Brutalist Poster Stock) */
+[data-theme="brutal"] {
+  --color-paper: oklch(97.5% 0.006 95);
+  --color-paper-2: oklch(99.5% 0.002 95);
+  --color-paper-3: oklch(92% 0.007 95);
+  --surface: var(--color-paper-2);
+  --surface-2: var(--color-paper-3);
+  --surface-3: oklch(88% 0.008 95);
+  --color-ink: oklch(10% 0.006 95);
+  --color-ink-2: oklch(24% 0.006 95);
+  --color-muted: oklch(45% 0.008 95);
+  --color-rule: oklch(10% 0.006 95);
+  --color-rule-subtle: oklch(78% 0.008 95);
+  --color-accent: oklch(90% 0.19 105);
+  --color-accent-ink: oklch(10% 0.006 95);
+  --color-focus: oklch(10% 0.006 95);
+  --border-w: 3px;
+  --radius-sm: 0px;
+  --radius-card: 0px;
+  --radius-lg: 0px;
+  --radius-pill: 0px;
+  --shadow-card: none;
+  --shadow-btn: none;
+  --font-display: "Libre Franklin", sans-serif;
+  --font-body: "Libre Franklin", sans-serif;
+  --btn-light: oklch(10% 0.006 95);
+  --btn-light-ink: oklch(98% 0.005 95);
+  --btn-light-hover: oklch(90% 0.19 105);
+}
+
+/* Theme 3: Sticker (Die-Cut Chunky Physicality) */
+[data-theme="sticker"] {
+  --color-paper: oklch(96% 0.012 85);
+  --color-paper-2: oklch(99.5% 0.002 85);
+  --color-paper-3: oklch(91% 0.02 80);
+  --surface: var(--color-paper-2);
+  --surface-2: var(--color-paper-3);
+  --surface-3: oklch(88% 0.02 80);
+  --color-ink: oklch(19% 0.015 80);
+  --color-ink-2: oklch(30% 0.015 80);
+  --color-muted: oklch(50% 0.018 70);
+  --color-rule: oklch(19% 0.015 80);
+  --color-rule-subtle: oklch(85% 0.015 80);
+  --color-accent: oklch(62% 0.24 350);
+  --color-accent-ink: oklch(99% 0.005 85);
+  --color-focus: oklch(62% 0.24 350);
+  --border-w: 2.5px;
+  --radius-sm: 8px;
+  --radius-card: 18px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+  --shadow-card: 5px 5px 0px var(--color-ink);
+  --shadow-btn: 3px 3px 0px var(--color-ink);
+  --font-display: "Gabarito", sans-serif;
+  --font-body: "Sofia Sans", sans-serif;
+  --btn-light: oklch(62% 0.24 350);
+  --btn-light-ink: oklch(99% 0.005 85);
+  --btn-light-hover: oklch(56% 0.26 350);
+}
+
+/* Theme 4: Werkstatt (Bauhaus Workshop Grid) */
+[data-theme="werkstatt"] {
+  --color-paper: oklch(86% 0.022 80);
+  --color-paper-2: oklch(91% 0.018 80);
+  --color-paper-3: oklch(80% 0.026 78);
+  --surface: var(--color-paper-2);
+  --surface-2: var(--color-paper-3);
+  --surface-3: oklch(76% 0.025 78);
+  --color-ink: oklch(17% 0.008 60);
+  --color-ink-2: oklch(28% 0.01 60);
+  --color-muted: oklch(44% 0.012 62);
+  --color-rule: oklch(17% 0.008 60);
+  --color-rule-subtle: oklch(70% 0.015 65);
+  --color-accent: oklch(48% 0.21 260);
+  --color-accent-ink: oklch(98% 0.005 80);
+  --color-focus: oklch(48% 0.21 260);
+  --border-w: 2.5px;
+  --radius-sm: 0px;
+  --radius-card: 0px;
+  --radius-lg: 0px;
+  --radius-pill: 0px;
+  --shadow-card: none;
+  --shadow-btn: none;
+  --font-display: "Jost", sans-serif;
+  --font-body: "Karla", sans-serif;
+  --btn-light: oklch(48% 0.21 260);
+  --btn-light-ink: oklch(98% 0.005 80);
+  --btn-light-hover: oklch(17% 0.008 60);
+}
+
+/* Theme 5: Dark (Atmospheric Midnight) */
+[data-theme="dark"] {
+  --color-paper: oklch(10% 0.005 240);
+  --color-paper-2: oklch(14% 0.006 240);
+  --color-paper-3: oklch(18% 0.008 240);
+  --surface: var(--color-paper-2);
+  --surface-2: var(--color-paper-3);
+  --surface-3: oklch(22% 0.01 240);
+  --color-ink: oklch(98% 0.005 240);
+  --color-ink-2: oklch(82% 0.008 240);
+  --color-muted: oklch(65% 0.008 240);
+  --color-rule: oklch(24% 0.006 240);
+  --color-rule-subtle: oklch(18% 0.006 240);
+  --color-accent: oklch(74% 0.17 152);
+  --color-accent-ink: oklch(10% 0.005 240);
+  --color-focus: oklch(72% 0.15 250);
+  --border-w: 1px;
+  --radius-sm: 6px;
+  --radius-card: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --shadow-card: 0 4px 20px oklch(0% 0 0 / 0.4);
+  --shadow-btn: none;
+  --font-display: "Manrope", sans-serif;
+  --font-body: "Manrope", sans-serif;
+  --btn-light: oklch(94% 0.005 240);
+  --btn-light-ink: oklch(10% 0.005 240);
+  --btn-light-hover: oklch(98% 0.005 240);
+  --white-alpha-03: oklch(98% 0.005 240 / 0.03);
+  --white-alpha-08: oklch(98% 0.005 240 / 0.08);
+  --white-alpha-15: oklch(98% 0.005 240 / 0.15);
+}

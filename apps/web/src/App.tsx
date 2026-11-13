@@ -99,6 +99,14 @@ export default function App() {
   const [speakReplies, setSpeakReplies] = useState(true);
   const speakRepliesRef = useRef(true);
   speakRepliesRef.current = speakReplies;
+  const THEME_KEY = "sutra.theme";
+  const [theme, setTheme] = useState<string>(() => lsGet(THEME_KEY) || "carnival");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    lsSet(THEME_KEY, theme);
+  }, [theme]);
+
   const [textOnly, setTextOnly] = useState(() => lsGet(TEXT_ONLY_KEY) === "1");
   const [providerStatus, setProviderStatus] = useState<{
     groq?: ProviderStatus;
@@ -462,6 +470,8 @@ export default function App() {
       <Nav
         lang={lang}
         onLang={setLang}
+        theme={theme}
+        onTheme={setTheme}
         inWorkspace={stage !== "idle"}
         onNewIdea={newIdea}
         onStartSpeaking={startSpeaking}

@@ -46,6 +46,11 @@ apps/web/test-results/
 
 # AI agent skills & scratch
 .agents/
+.codex/
+skills-lock.json
+.github/agents/
+.github/hooks/
+.github/skills/
 
 # Data & Runtime
 data/

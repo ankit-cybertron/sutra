@@ -18,6 +18,7 @@ from apps.api.app.schemas import (
     StoredPlanVersion,
     Turn,
 )
+from apps.api.app.services.readiness_service import calculate_plan_readiness
 from apps.api.app.services.session_service import SessionService
 from apps.api.app.store import get_store
 
@@ -55,6 +56,7 @@ class PlanService:
             answers=cleaned_answers,
             lang=session.idea_lang,
         )
+        plan.readiness_score = calculate_plan_readiness(plan)
 
         plan_id = f"pln_{uuid.uuid4().hex[:10]}"
         now = time.time()
@@ -162,6 +164,7 @@ class PlanService:
 
         resulting_plan_doc = None
         if updated_plan is not None:
+            updated_plan.readiness_score = calculate_plan_readiness(updated_plan)
             new_version_num = len(storage.versions) + 1
             now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time()))
             new_version = StoredPlanVersion(

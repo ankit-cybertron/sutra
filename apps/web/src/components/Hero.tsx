@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { motion } from "motion/react";
 import type { Lang } from "../api/types";
 import { LIMITS } from "../lib/config";
 import { t } from "../lib/i18n";
@@ -31,7 +32,12 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
   return (
     <section className="hero" id="top">
       <div className="hero-grid" aria-hidden="true" />
-      <div className="hero-inner">
+      <motion.div
+        className="hero-inner"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+      >
         <h1 className="h1">
           <span className="h1-main">{t(lang, "h1a")}</span>{" "}
           <span className="h1-accent">{t(lang, "h1b")}</span>
@@ -125,7 +131,7 @@ export function Hero({ lang, idea, partial, busy, rateLimited, voiceStatus, voic
             </li>
           ))}
         </ul>
-      </div>
+      </motion.div>
     </section>
   );
 }
