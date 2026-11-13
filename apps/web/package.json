@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && vite build",
+    "build": "cd ../../voice-to-blueprint-main && npm run build:spa",
     "preview": "vite preview"
   },
   "dependencies": {
