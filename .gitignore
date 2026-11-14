@@ -20,7 +20,8 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
+!voice-to-blueprint-main/src/lib/**
+/lib/
 lib64/
 parts/
 sdist/
