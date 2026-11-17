@@ -28,9 +28,9 @@
 
 ### Video Walkthrough (YouTube Demo)
 
-[![Sutra Product Demo Video](docs/assets/youtube-thumbnail.png)](https://www.youtube.com/watch?v=placeholder)
+[![Sutra Product Demo Video](docs/assets/youtube-thumbnail.png)](https://youtu.be/c-a272j0IlM)
 
-> 🎥 **[Watch the 3-Minute Walkthrough on YouTube](https://www.youtube.com/watch?v=placeholder)**  
+> 🎥 **[Watch the 3-Minute Walkthrough on YouTube](https://youtu.be/c-a272j0IlM)**  
 > Experience end-to-end idea intake in Hinglish, sub-second transcription with Gnani AI, automated blueprint generation, and voice-driven plan modifications.
 
 ---
